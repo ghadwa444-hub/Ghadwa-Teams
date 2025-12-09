@@ -9,7 +9,7 @@ import { Footer } from './components/Footer';
 import { Hero } from './components/Hero';
 import { Features } from './components/Features';
 import { CartDrawer } from './components/CartDrawer';
-import { AuthModal, MenuModal, ChefConflictModal, OrderSuccessModal } from './components/Modals';
+import { AuthModal, MenuModal, ChefConflictModal, OrderSuccessModal, ClearCartModal } from './components/Modals';
 import { LoadingScreen } from './components/UIHelpers';
 import { WeeklyOffers } from './components/home/WeeklyOffers';
 import { ChefsSection } from './components/home/ChefsSection';
@@ -65,6 +65,7 @@ const App = () => {
     const [isCartOpen, setIsCartOpen] = useState(false);
     const [orderSuccess, setOrderSuccess] = useState<{ isOpen: boolean; orderId: number | null }>({ isOpen: false, orderId: null });
     const [conflictModal, setConflictModal] = useState<{ isOpen: boolean; item: MenuItem | null; newQuantity: number }>({ isOpen: false, item: null, newQuantity: 0 });
+    const [isClearCartModalOpen, setIsClearCartModalOpen] = useState(false);
 
     const currentChefName = cart.length > 0 ? cart[0].chef : null;
 
@@ -83,14 +84,18 @@ const App = () => {
                     api.getContactSettings()
                 ]);
 
-                setChefs(chefsData);
-                setOrders(ordersData);
-                setMenuItems(menuData);
-                setOffers(offersData);
-                setBoxes(boxesData);
-                setBestSellers(bestSellersData);
-                setPromoCodes(promosData);
-                setContactSettings(settingsData);
+                // Only update if fetch returned data, otherwise stick to INITIAL constants
+                if (chefsData.length) setChefs(chefsData);
+                if (menuData.length) setMenuItems(menuData);
+                if (offersData.length) setOffers(offersData);
+                if (boxesData.length) setBoxes(boxesData);
+                if (bestSellersData.length) setBestSellers(bestSellersData);
+                if (promosData.length) setPromoCodes(promosData);
+                
+                // Orders start empty usually, but if fetched, set them
+                if (ordersData) setOrders(ordersData);
+                if (settingsData) setContactSettings(settingsData);
+                
             } catch (error) {
                 console.error("Error loading data:", error);
             } finally {
@@ -130,6 +135,11 @@ const App = () => {
              setCart([{ ...item, quantity: newQuantity }]);
         }
         setConflictModal({ isOpen: false, item: null, newQuantity: 0 });
+    };
+
+    const handleClearCart = () => {
+        setCart([]);
+        setIsClearCartModalOpen(false);
     };
 
     const handleLogin = (type: string) => {
@@ -277,6 +287,7 @@ const App = () => {
                     setIsCartOpen(false);
                     setActivePage('checkout');
                 }} 
+                onClearCart={() => setIsClearCartModalOpen(true)}
             />
             <ChefConflictModal 
                 isOpen={conflictModal.isOpen} 
@@ -292,6 +303,11 @@ const App = () => {
                     setOrderSuccess({ ...orderSuccess, isOpen: false });
                     setActivePage('home');
                 }} 
+            />
+            <ClearCartModal 
+                isOpen={isClearCartModalOpen}
+                onClose={() => setIsClearCartModalOpen(false)}
+                onConfirm={handleClearCart}
             />
 
             {isAdmin && activePage.startsWith('admin') ? (

@@ -32,7 +32,8 @@ export const Footer: React.FC<FooterProps> = ({ contactSettings }) => {
                         </p>
                         <div className="flex gap-4">
                             <a href={settings.facebookUrl} target="_blank" rel="noreferrer" className="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center text-gray-400 hover:bg-[#8B2525] hover:text-white transition"><i className="fa-brands fa-facebook-f"></i></a>
-                            <a href={settings.instagramUrl} target="_blank" rel="noreferrer" className="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center text-gray-400 hover:bg-[#8B2525] hover:text-white transition"><i className="fa-brands fa-instagram"></i></a>
+                            {/* Changed Instagram to LinkedIn Icon */}
+                            <a href={settings.instagramUrl} target="_blank" rel="noreferrer" className="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center text-gray-400 hover:bg-[#8B2525] hover:text-white transition"><i className="fa-brands fa-linkedin-in"></i></a>
                             <a href={settings.tiktokUrl} target="_blank" rel="noreferrer" className="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center text-gray-400 hover:bg-[#8B2525] hover:text-white transition"><i className="fa-brands fa-tiktok"></i></a>
                         </div>
                     </div>

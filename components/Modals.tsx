@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { MENU_CATEGORIES } from '../constants';
 
@@ -172,6 +173,39 @@ export const ChefConflictModal: React.FC<ChefConflictModalProps> = ({ isOpen, on
                     </button>
                     <button onClick={onClose} className="flex-1 bg-gray-100 text-gray-700 py-3 rounded-xl font-bold hover:bg-gray-200 transition">
                         خلي سلتك زي ما هي
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// --- Clear Cart Modal ---
+interface ClearCartModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    onConfirm: () => void;
+}
+
+export const ClearCartModal: React.FC<ClearCartModalProps> = ({ isOpen, onClose, onConfirm }) => {
+    if (!isOpen) return null;
+    return (
+        <div className="fixed inset-0 z-[160] flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose}></div>
+            <div className="bg-white rounded-2xl p-6 max-w-sm w-full relative z-10 shadow-xl animate-fade-in text-center border border-gray-100">
+                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl text-red-600">
+                    <i className="fa-solid fa-trash-can"></i>
+                </div>
+                <h3 className="font-bold text-xl text-gray-900 mb-2">إفراغ السلة؟</h3>
+                <p className="text-gray-500 mb-6 text-sm">
+                    هل أنت متأكد أنك تريد حذف جميع المنتجات من السلة؟ لا يمكن التراجع عن هذا الإجراء.
+                </p>
+                <div className="flex gap-3">
+                    <button onClick={onConfirm} className="flex-1 bg-red-600 text-white py-3 rounded-xl font-bold hover:bg-red-700 transition shadow-lg shadow-red-900/20">
+                        نعم، إفراغ السلة
+                    </button>
+                    <button onClick={onClose} className="flex-1 bg-gray-100 text-gray-700 py-3 rounded-xl font-bold hover:bg-gray-200 transition">
+                        إلغاء
                     </button>
                 </div>
             </div>

@@ -92,7 +92,8 @@ export const AdminContactSettings: React.FC<AdminContactSettingsProps> = ({ sett
                                 />
                             </div>
                             <div className="space-y-2">
-                                <label className="block text-sm font-bold text-gray-700">Instagram URL</label>
+                                {/* Changed label to LinkedIn */}
+                                <label className="block text-sm font-bold text-gray-700">LinkedIn URL</label>
                                 <input
                                     type="text"
                                     name="instagramUrl"

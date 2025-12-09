@@ -8,9 +8,10 @@ interface CartDrawerProps {
     cart: CartItem[];
     updateQuantity: (id: number, qty: number, item?: MenuItem) => void;
     onCheckout: () => void;
+    onClearCart: () => void; // Added Prop
 }
 
-export const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose, cart, updateQuantity, onCheckout }) => {
+export const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose, cart, updateQuantity, onCheckout, onClearCart }) => {
     const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
     if (!isOpen) return null;
@@ -25,9 +26,20 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose, cart, u
                         سلة المشتريات
                         <span className="text-sm font-normal text-gray-500">({cart.length} منتج)</span>
                     </h2>
-                    <button onClick={onClose} className="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors">
-                        <i className="fa-solid fa-xmark text-gray-500"></i>
-                    </button>
+                    <div className="flex items-center gap-2">
+                         {cart.length > 0 && (
+                            <button 
+                                onClick={onClearCart}
+                                className="w-8 h-8 rounded-full hover:bg-red-50 text-gray-400 hover:text-red-500 flex items-center justify-center transition-colors"
+                                title="إفراغ السلة"
+                            >
+                                <i className="fa-solid fa-trash-can"></i>
+                            </button>
+                        )}
+                        <button onClick={onClose} className="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors">
+                            <i className="fa-solid fa-xmark text-gray-500"></i>
+                        </button>
+                    </div>
                 </div>
                 <div className="flex-grow overflow-y-auto p-5 space-y-4">
                     {cart.length === 0 ? (
