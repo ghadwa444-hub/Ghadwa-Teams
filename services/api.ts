@@ -21,7 +21,15 @@ async function fetchData<T>(endpoint: string, fallback: T): Promise<T> {
     }
 }
 
+async function simulateRequest(data: any): Promise<boolean> {
+    if (SIMULATE_API) {
+        return new Promise(resolve => setTimeout(() => resolve(true), 800));
+    }
+    return true; // In real app, fetch(...) would go here
+}
+
 export const api = {
+    // --- Fetch Data ---
     getChefs: () => fetchData<Chef[]>('/chefs', INITIAL_CHEFS),
     getOrders: () => fetchData<Order[]>('/orders', INITIAL_ORDERS),
     getMenuItems: () => fetchData<MenuItem[]>('/menu', INITIAL_MENU_ITEMS),
@@ -31,12 +39,10 @@ export const api = {
     getPromoCodes: () => fetchData<PromoCode[]>('/promos', INITIAL_PROMO_CODES),
     getContactSettings: () => fetchData<ContactSettings>('/settings', INITIAL_CONTACT_SETTINGS),
     
-    // Simulate submitting an order to the backend/company
+    // --- Orders ---
     submitOrder: async (order: Order): Promise<boolean> => {
         console.log("Order submitted to backend:", order);
-        if (SIMULATE_API) {
-             return new Promise(resolve => setTimeout(() => resolve(true), 1000));
-        }
+        if (SIMULATE_API) return simulateRequest(order);
         try {
             const response = await fetch(`${API_BASE_URL}/orders`, {
                 method: 'POST',
@@ -49,13 +55,47 @@ export const api = {
             return false;
         }
     },
+    updateOrderStatus: async (id: number, status: string): Promise<boolean> => {
+        console.log(`Order ${id} status updated to ${status}`);
+        return simulateRequest({ id, status });
+    },
+    deleteOrder: async (id: number): Promise<boolean> => {
+        console.log(`Order ${id} deleted`);
+        return simulateRequest({ id });
+    },
 
+    // --- Chefs ---
+    addChef: async (chef: Chef) => simulateRequest(chef),
+    updateChef: async (chef: Chef) => simulateRequest(chef),
+    deleteChef: async (id: number) => simulateRequest(id),
+
+    // --- Menu Items ---
+    addMenuItem: async (item: MenuItem) => simulateRequest(item),
+    updateMenuItem: async (item: MenuItem) => simulateRequest(item),
+    deleteMenuItem: async (id: number) => simulateRequest(id),
+
+    // --- Offers ---
+    addOffer: async (item: MenuItem) => simulateRequest(item),
+    updateOffer: async (item: MenuItem) => simulateRequest(item),
+    deleteOffer: async (id: number) => simulateRequest(id),
+
+    // --- Boxes ---
+    addBox: async (box: Box) => simulateRequest(box),
+    updateBox: async (box: Box) => simulateRequest(box),
+    deleteBox: async (id: number) => simulateRequest(id),
+
+    // --- Best Sellers ---
+    addBestSeller: async (item: MenuItem) => simulateRequest(item),
+    updateBestSeller: async (item: MenuItem) => simulateRequest(item),
+    deleteBestSeller: async (id: number) => simulateRequest(id),
+
+    // --- Promo Codes ---
+    addPromoCode: async (promo: PromoCode) => simulateRequest(promo),
+    deletePromoCode: async (id: number) => simulateRequest(id),
+
+    // --- Settings ---
     updateContactSettings: async (settings: ContactSettings): Promise<boolean> => {
         console.log("Settings updated:", settings);
-        if (SIMULATE_API) {
-            return new Promise(resolve => setTimeout(() => resolve(true), 1000));
-        }
-        // Real API call would go here
-        return true;
+        return simulateRequest(settings);
     }
 };

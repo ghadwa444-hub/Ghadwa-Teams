@@ -44,8 +44,8 @@ export const WeeklyOffers: React.FC<WeeklyOffersProps> = ({ offers, cart, update
                          const isOpen = chefObj ? chefObj.isOpen : true;
 
                          return (
-                        <div key={offer.id} className="bg-white rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-300 overflow-hidden group border border-gray-100 relative">
-                            <div className="relative h-64 overflow-hidden">
+                        <div key={offer.id} className="flex flex-col bg-white rounded-[2rem] shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100 group overflow-hidden h-full transform hover:-translate-y-1">
+                            <div className="h-64 overflow-hidden relative">
                                 <img src={offer.img} alt={offer.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
                                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
                                 
@@ -72,7 +72,7 @@ export const WeeklyOffers: React.FC<WeeklyOffersProps> = ({ offers, cart, update
                                     <h3 className="font-bold text-xl">{offer.name}</h3>
                                 </div>
                             </div>
-                            <div className="p-6">
+                            <div className="p-6 flex-grow flex flex-col justify-between">
                                 <div className="flex items-center justify-between mb-6">
                                     <div className="flex flex-col">
                                         <span className="text-gray-400 text-sm line-through decoration-red-400 decoration-2">{offer.oldPrice} ج.م</span>

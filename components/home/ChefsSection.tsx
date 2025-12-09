@@ -19,7 +19,7 @@ export const ChefsSection: React.FC<ChefsSectionProps> = ({ onNavigate, onChefCl
             </div>
 
             {chefs.length === 0 ? (
-                <div className="text-center py-12 border-2 border-dashed border-gray-200 rounded-3xl bg-gray-50">
+                <div className="text-center py-12 border-2 border-dashed border-gray-200 rounded-[2rem] bg-gray-50">
                     <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl text-gray-400">
                         <i className="fa-solid fa-user-chef"></i>
                     </div>
@@ -29,9 +29,9 @@ export const ChefsSection: React.FC<ChefsSectionProps> = ({ onNavigate, onChefCl
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                     {chefs.slice(0, 3).map(chef => (
-                        <div key={chef.id} onClick={() => onChefClick(chef)} className="group relative bg-white rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden cursor-pointer border border-gray-100">
+                        <div key={chef.id} onClick={() => onChefClick(chef)} className="group relative bg-white rounded-[2rem] shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden cursor-pointer border border-gray-100 transform hover:-translate-y-1">
                             {/* Cover Image */}
-                            <div className="h-40 overflow-hidden relative">
+                            <div className="h-48 overflow-hidden relative">
                                 <img src={chef.cover} alt={chef.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
                                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
                                 

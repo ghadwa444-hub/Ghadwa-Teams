@@ -71,62 +71,83 @@ export const AdminChefs: React.FC<AdminChefsProps> = ({ chefs, orders, toggleChe
                     const stats = getChefStats(chef.name);
                     
                     return (
-                        <div key={chef.id} className={`bg-white rounded-2xl border transition-all ${chef.isOpen ? 'border-green-200 shadow-green-100' : 'border-gray-200 opacity-75' } shadow-sm relative group overflow-hidden`}>
-                             {/* Cover Image */}
-                             <div className="h-24 w-full relative bg-gray-100">
-                                <img src={chef.cover} alt={`${chef.name} cover`} className="w-full h-full object-cover" />
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
-                             </div>
+                        <div key={chef.id} className={`bg-white rounded-[2rem] border transition-all duration-300 ${chef.isOpen ? 'border-green-200 shadow-lg shadow-green-100/50' : 'border-gray-200 opacity-90' } overflow-hidden relative group hover:shadow-xl`}>
+                             {/* Cover Image Area */}
+                             <div className="h-32 w-full relative bg-gray-100">
+                                <img src={chef.cover} alt={`${chef.name} cover`} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
+                                
+                                {/* Status Pill */}
+                                <div className={`absolute top-4 left-4 px-3 py-1 rounded-full text-[10px] font-bold backdrop-blur-md shadow-sm border flex items-center gap-1.5 ${
+                                    chef.isOpen 
+                                    ? 'bg-green-500/90 text-white border-green-400' 
+                                    : 'bg-red-500/90 text-white border-red-400'
+                                }`}>
+                                    <span className={`w-1.5 h-1.5 rounded-full ${chef.isOpen ? 'bg-white animate-pulse' : 'bg-white/50'}`}></span>
+                                    {chef.isOpen ? 'مفتوح' : 'مغلق'}
+                                </div>
 
-                             <div className="absolute top-4 left-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                                <button onClick={() => openEdit(chef)} className="w-8 h-8 rounded-full bg-white text-blue-600 flex items-center justify-center hover:bg-gray-100 shadow-sm"><i className="fa-solid fa-pen"></i></button>
-                                <button 
-                                    onClick={(e) => { e.stopPropagation(); onDelete(chef.id); }} 
-                                    className="w-8 h-8 rounded-full bg-white text-red-600 flex items-center justify-center hover:bg-gray-100 shadow-sm"
-                                >
-                                    <i className="fa-solid fa-trash"></i>
-                                </button>
+                                {/* Action Buttons - Always Visible on Mobile, Hover on Desktop */}
+                                <div className="absolute top-4 right-4 flex gap-2">
+                                    <button 
+                                        onClick={() => openEdit(chef)} 
+                                        className="w-8 h-8 rounded-full bg-white/90 backdrop-blur text-blue-600 flex items-center justify-center hover:bg-blue-500 hover:text-white shadow-sm transition-all"
+                                        title="تعديل"
+                                    >
+                                        <i className="fa-solid fa-pen text-xs"></i>
+                                    </button>
+                                    <button 
+                                        onClick={(e) => { 
+                                            e.stopPropagation(); 
+                                            // Ensure we are calling the delete handler passed from parent
+                                            if (window.confirm('هل أنت متأكد من حذف هذا الشيف؟')) {
+                                                onDelete(chef.id); 
+                                            }
+                                        }} 
+                                        className="w-8 h-8 rounded-full bg-white/90 backdrop-blur text-red-600 flex items-center justify-center hover:bg-red-500 hover:text-white shadow-sm transition-all"
+                                        title="حذف"
+                                    >
+                                        <i className="fa-solid fa-trash text-xs"></i>
+                                    </button>
+                                </div>
                              </div>
                             
-                            <div className="p-6 pt-0">
-                                {/* Profile Image and Name */}
-                                <div className="flex items-end -mt-8 mb-4">
-                                     <img src={chef.img} alt={chef.name} className="w-16 h-16 rounded-full object-cover border-4 border-white shadow-md z-10 bg-white" />
-                                     <div className="mr-3 mb-1">
-                                        <h3 className="font-bold text-lg text-gray-900 leading-tight">{chef.name}</h3>
-                                        <p className="text-sm text-gray-500">{chef.specialty}</p>
+                            <div className="p-6 pt-0 relative">
+                                {/* Profile Image */}
+                                <div className="flex justify-center -mt-10 mb-3">
+                                     <div className="w-20 h-20 rounded-full p-1 bg-white shadow-lg">
+                                        <img src={chef.img} alt={chef.name} className="w-full h-full object-cover rounded-full" />
                                      </div>
                                 </div>
                                 
-                                {/* Performance Stats */}
-                                <div className="grid grid-cols-2 gap-3 mb-4 bg-gray-50 p-3 rounded-xl border border-gray-100">
-                                    <div className="text-center">
-                                        <p className="text-xs text-gray-500 mb-1">عدد الطلبات</p>
-                                        <p className="font-bold text-gray-900">{stats.orderCount}</p>
+                                <div className="text-center mb-4">
+                                    <h3 className="font-bold text-xl text-gray-900">{chef.name}</h3>
+                                    <p className="text-sm text-[#8B2525] font-medium bg-red-50 px-3 py-0.5 rounded-full inline-block mt-1">{chef.specialty}</p>
+                                </div>
+                                
+                                {/* Stats Grid */}
+                                <div className="grid grid-cols-2 gap-3 mb-4">
+                                    <div className="bg-gray-50 p-3 rounded-2xl border border-gray-100 text-center">
+                                        <p className="text-[10px] text-gray-500 font-bold mb-1">الطلبات</p>
+                                        <p className="font-black text-gray-900 text-lg">{stats.orderCount}</p>
                                     </div>
-                                    <div className="text-center border-r border-gray-200">
-                                        <p className="text-xs text-gray-500 mb-1">إجمالي الأرباح</p>
-                                        <p className="font-bold text-[#8B2525]">{stats.totalRevenue} ج.م</p>
+                                    <div className="bg-gray-50 p-3 rounded-2xl border border-gray-100 text-center">
+                                        <p className="text-[10px] text-gray-500 font-bold mb-1">الأرباح</p>
+                                        <p className="font-black text-[#8B2525] text-lg">{stats.totalRevenue}</p>
                                     </div>
                                 </div>
 
-                                <div className="text-sm text-gray-500 mb-4 space-y-1">
-                                    <div className="flex items-center gap-2"><i className="fa-regular fa-clock"></i> {chef.workingHours}</div>
-                                    <div className="flex items-center gap-2"><i className="fa-solid fa-truck-fast"></i> توصيل خلال {chef.deliveryTime}</div>
+                                <div className="flex items-center justify-between text-xs text-gray-500 pt-4 border-t border-gray-100 mb-4">
+                                    <div className="flex items-center gap-1"><i className="fa-regular fa-clock text-gray-400"></i> {chef.workingHours}</div>
+                                    <div className="flex items-center gap-1"><i className="fa-solid fa-truck-fast text-gray-400"></i> {chef.deliveryTime}</div>
                                 </div>
 
-                                <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-                                     <div className="flex items-center gap-2">
-                                        <span className={`w-3 h-3 rounded-full ${chef.isOpen ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></span>
-                                        <span className="text-sm font-bold text-gray-600">{chef.isOpen ? 'المطبخ مفتوح' : 'المطبخ مغلق'}</span>
-                                     </div>
-                                     <button 
-                                        onClick={() => toggleChefStatus(chef.id)}
-                                        className={`px-4 py-2 rounded-lg text-sm font-bold text-white transition-colors ${chef.isOpen ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'}`}
-                                     >
-                                         {chef.isOpen ? 'إغلاق المطبخ' : 'فتح المطبخ'}
-                                     </button>
-                                </div>
+                                <button 
+                                    onClick={() => toggleChefStatus(chef.id)}
+                                    className={`w-full py-2.5 rounded-xl font-bold text-sm text-white transition-all shadow-md ${chef.isOpen ? 'bg-red-500 hover:bg-red-600 shadow-red-200' : 'bg-green-500 hover:bg-green-600 shadow-green-200'}`}
+                                >
+                                     {chef.isOpen ? 'إغلاق المطبخ 🔒' : 'فتح المطبخ 🔓'}
+                                </button>
                             </div>
                         </div>
                     );

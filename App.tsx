@@ -159,15 +159,18 @@ const App = () => {
         setActivePage('home');
     };
 
-    // --- Admin Handlers ---
+    // --- Admin Handlers (Using API Service) ---
     const updateOrderStatus = (id: number, status: string) => {
+        // Optimistic update
         setOrders(prev => prev.map(o => o.id === id ? {...o, status} : o));
+        api.updateOrderStatus(id, status);
     };
     
     // Explicit Delete Handlers with window.confirm
     const handleDeleteOrder = (id: number) => {
         if(window.confirm('هل أنت متأكد من حذف هذا الطلب؟')) {
             setOrders(prev => prev.filter(o => o.id !== id));
+            api.deleteOrder(id);
             if (activePage === 'admin-order-details' && selectedOrder?.id === id) {
                 setActivePage('admin-orders');
             }
@@ -179,58 +182,100 @@ const App = () => {
         setActivePage('admin-order-details');
     }
     const toggleChefStatus = (id: number) => {
-        setChefs(prev => prev.map(c => c.id === id ? {...c, isOpen: !c.isOpen} : c));
+        const updatedChefs = chefs.map(c => c.id === id ? {...c, isOpen: !c.isOpen} : c);
+        setChefs(updatedChefs);
+        const chef = updatedChefs.find(c => c.id === id);
+        if (chef) api.updateChef(chef);
     };
-    const handleAddChef = (newChef: Chef) => setChefs([...chefs, newChef]);
-    const handleEditChef = (updatedChef: Chef) => setChefs(prev => prev.map(c => c.id === updatedChef.id ? updatedChef : c));
+    const handleAddChef = (newChef: Chef) => {
+        setChefs([...chefs, newChef]);
+        api.addChef(newChef);
+    }
+    const handleEditChef = (updatedChef: Chef) => {
+        setChefs(prev => prev.map(c => c.id === updatedChef.id ? updatedChef : c));
+        api.updateChef(updatedChef);
+    }
     
     const handleDeleteChef = (id: number) => { 
         if(window.confirm('هل أنت متأكد من حذف هذا الشيف؟')) {
             setChefs(prev => prev.filter(c => c.id !== id)); 
+            api.deleteChef(id);
         }
     }
     
-    const handleAddMeal = (newMeal: MenuItem) => setMenuItems([...menuItems, newMeal]);
-    const handleEditMeal = (updatedMeal: MenuItem) => setMenuItems(prev => prev.map(m => m.id === updatedMeal.id ? updatedMeal : m));
+    const handleAddMeal = (newMeal: MenuItem) => {
+        setMenuItems([...menuItems, newMeal]);
+        api.addMenuItem(newMeal);
+    }
+    const handleEditMeal = (updatedMeal: MenuItem) => {
+        setMenuItems(prev => prev.map(m => m.id === updatedMeal.id ? updatedMeal : m));
+        api.updateMenuItem(updatedMeal);
+    }
     
     const handleDeleteMeal = (id: number) => { 
         if(window.confirm('هل أنت متأكد من حذف هذه الوجبة؟')) {
             setMenuItems(prev => prev.filter(m => m.id !== id)); 
+            api.deleteMenuItem(id);
         }
     }
     
-    const handleAddOffer = (newOffer: MenuItem) => setOffers([...offers, newOffer]);
-    const handleEditOffer = (updatedOffer: MenuItem) => setOffers(prev => prev.map(o => o.id === updatedOffer.id ? updatedOffer : o));
+    const handleAddOffer = (newOffer: MenuItem) => {
+        setOffers([...offers, newOffer]);
+        api.addOffer(newOffer);
+    }
+    const handleEditOffer = (updatedOffer: MenuItem) => {
+        setOffers(prev => prev.map(o => o.id === updatedOffer.id ? updatedOffer : o));
+        api.updateOffer(updatedOffer);
+    }
     
     const handleDeleteOffer = (id: number) => { 
         if(window.confirm('هل أنت متأكد من حذف هذا العرض؟')) {
             setOffers(prev => prev.filter(o => o.id !== id)); 
+            api.deleteOffer(id);
         }
     }
     
-    const handleAddBox = (newBox: Box) => setBoxes([...boxes, newBox]);
-    const handleEditBox = (updatedBox: Box) => setBoxes(prev => prev.map(b => b.id === updatedBox.id ? updatedBox : b));
+    const handleAddBox = (newBox: Box) => {
+        setBoxes([...boxes, newBox]);
+        api.addBox(newBox);
+    }
+    const handleEditBox = (updatedBox: Box) => {
+        setBoxes(prev => prev.map(b => b.id === updatedBox.id ? updatedBox : b));
+        api.updateBox(updatedBox);
+    }
     
     const handleDeleteBox = (id: number) => { 
         if(window.confirm('هل أنت متأكد من حذف هذا البوكس؟')) {
             setBoxes(prev => prev.filter(b => b.id !== id)); 
+            api.deleteBox(id);
         }
     }
     
-    const handleAddBestSeller = (newItem: MenuItem) => setBestSellers([...bestSellers, newItem]);
-    const handleEditBestSeller = (updatedItem: MenuItem) => setBestSellers(prev => prev.map(i => i.id === updatedItem.id ? updatedItem : i));
+    const handleAddBestSeller = (newItem: MenuItem) => {
+        setBestSellers([...bestSellers, newItem]);
+        api.addBestSeller(newItem);
+    }
+    const handleEditBestSeller = (updatedItem: MenuItem) => {
+        setBestSellers(prev => prev.map(i => i.id === updatedItem.id ? updatedItem : i));
+        api.updateBestSeller(updatedItem);
+    }
     
     const handleDeleteBestSeller = (id: number) => { 
         if(window.confirm('هل أنت متأكد من حذف الوجبة من الأكثر مبيعاً؟')) {
             setBestSellers(prev => prev.filter(i => i.id !== id)); 
+            api.deleteBestSeller(id);
         }
     }
     
     // Promo Handlers
-    const handleAddPromo = (newPromo: PromoCode) => setPromoCodes([...promoCodes, newPromo]);
+    const handleAddPromo = (newPromo: PromoCode) => {
+        setPromoCodes([...promoCodes, newPromo]);
+        api.addPromoCode(newPromo);
+    }
     const handleDeletePromo = (id: number) => { 
         if(window.confirm('هل أنت متأكد من حذف هذا الكوبون؟')) {
             setPromoCodes(prev => prev.filter(p => p.id !== id)); 
+            api.deletePromoCode(id);
         }
     }
 
