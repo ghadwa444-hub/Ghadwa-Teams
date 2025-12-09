@@ -16,7 +16,6 @@ import { ChefsSection } from './components/home/ChefsSection';
 import { BestSellers } from './components/home/BestSellers';
 import { BoxesSection } from './components/home/BoxesSection';
 import { FullMenu } from './components/home/FullMenu';
-import { Categories } from './components/home/Categories';
 import { LiveOrderTracker } from './components/home/LiveOrderTracker';
 
 // Pages
@@ -218,6 +217,7 @@ const App = () => {
     }
     
     const handleDeleteMeal = (id: number) => { 
+        // Confirmation is handled in AdminMeals
         setMenuItems(prev => prev.filter(m => m.id !== id)); 
         api.deleteMenuItem(id);
     }
@@ -405,6 +405,7 @@ const App = () => {
                                 mealsCount={menuItems.length} 
                                 offersCount={offers.length} 
                                 visitorsCount={visitors} 
+                                onNavigate={setActivePage}
                             />
                          )}
                          {activePage === 'admin-orders' && <AdminOrders orders={orders} updateOrderStatus={updateOrderStatus} onDeleteOrder={handleDeleteOrder} onViewOrder={handleViewOrder} />}

@@ -14,11 +14,17 @@ interface AdminOffersProps {
 export const AdminOffers: React.FC<AdminOffersProps> = ({ offers, chefs, onAdd, onEdit, onDelete }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [currentOffer, setCurrentOffer] = useState<MenuItem | null>(null);
-    const [formData, setFormData] = useState<any>({ name: '', price: '', oldPrice: '', discount: '', chef: '', img: '' });
+    // Initialize formData with expiryDate
+    const [formData, setFormData] = useState<any>({ name: '', price: '', oldPrice: '', discount: '', chef: '', img: '', expiryDate: '' });
 
     const openAdd = () => {
         setCurrentOffer(null);
-        setFormData({ name: '', price: '', oldPrice: '', discount: '20%', chef: 'ماما فاطمة', img: 'https://source.unsplash.com/random/food' });
+        // Default expiry date 2 days from now
+        const defaultDate = new Date();
+        defaultDate.setDate(defaultDate.getDate() + 2);
+        const dateStr = defaultDate.toISOString().slice(0, 16); // Format for datetime-local
+
+        setFormData({ name: '', price: '', oldPrice: '', discount: '20%', chef: 'ماما فاطمة', img: 'https://source.unsplash.com/random/food', expiryDate: dateStr });
         setIsModalOpen(true);
     };
 
@@ -53,9 +59,8 @@ export const AdminOffers: React.FC<AdminOffersProps> = ({ offers, chefs, onAdd, 
                         <tr>
                             <th className="p-4 text-gray-700 font-bold">الصورة</th>
                             <th className="p-4 text-gray-700 font-bold">العرض</th>
-                            <th className="p-4 text-gray-700 font-bold">السعر الحالي</th>
-                            <th className="p-4 text-gray-700 font-bold">السعر القديم</th>
-                            <th className="p-4 text-gray-700 font-bold">الخصم</th>
+                            <th className="p-4 text-gray-700 font-bold">الأسعار</th>
+                            <th className="p-4 text-gray-700 font-bold">تاريخ الانتهاء</th>
                             <th className="p-4 text-gray-700 font-bold">الشيف</th>
                             <th className="p-4 text-gray-700 font-bold">إجراءات</th>
                         </tr>
@@ -66,14 +71,22 @@ export const AdminOffers: React.FC<AdminOffersProps> = ({ offers, chefs, onAdd, 
                                 <td className="p-4">
                                     <img src={offer.img} alt={offer.name} className="w-16 h-12 rounded-lg object-cover" />
                                 </td>
-                                <td className="p-4 font-bold">{offer.name}</td>
-                                <td className="p-4 text-green-600 font-bold">{offer.price} ج.م</td>
-                                <td className="p-4 text-red-400 line-through">{offer.oldPrice} ج.م</td>
-                                <td className="p-4"><span className="bg-red-100 text-red-600 px-2 py-1 rounded text-xs font-bold">{offer.discount}</span></td>
+                                <td className="p-4 font-bold">
+                                    {offer.name}
+                                    <span className="block text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded w-fit mt-1">{offer.discount}</span>
+                                </td>
+                                <td className="p-4">
+                                    <span className="text-green-600 font-bold">{offer.price}</span> 
+                                    <span className="text-gray-400 text-xs line-through mx-1">{offer.oldPrice}</span>
+                                </td>
+                                <td className="p-4 text-sm text-gray-600">
+                                    {offer.expiryDate ? new Date(offer.expiryDate).toLocaleDateString('ar-EG') : 'غير محدد'}
+                                </td>
                                 <td className="p-4 text-sm text-gray-600">{offer.chef}</td>
                                 <td className="p-4 flex gap-2">
                                     <button onClick={() => openEdit(offer)} className="text-blue-500 bg-blue-50 p-2 rounded-lg hover:bg-blue-100 transition"><i className="fa-solid fa-pen"></i></button>
                                     <button 
+                                        type="button"
                                         onClick={(e) => { e.stopPropagation(); onDelete(offer.id); }} 
                                         className="text-red-500 bg-red-50 p-2 rounded-lg hover:bg-red-100 transition"
                                     >
@@ -92,7 +105,17 @@ export const AdminOffers: React.FC<AdminOffersProps> = ({ offers, chefs, onAdd, 
                     <input type="number" placeholder="السعر الجديد" className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 text-gray-900" value={formData.price} onChange={e => setFormData({...formData, price: e.target.value})} required />
                     <input type="number" placeholder="السعر القديم" className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 text-gray-900" value={formData.oldPrice} onChange={e => setFormData({...formData, oldPrice: e.target.value})} required />
                 </div>
-                <input type="text" placeholder="نسبة الخصم (25%)" className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 text-gray-900" value={formData.discount} onChange={e => setFormData({...formData, discount: e.target.value})} required />
+                
+                <div className="grid grid-cols-2 gap-4">
+                    <input type="text" placeholder="نسبة الخصم (25%)" className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 text-gray-900" value={formData.discount} onChange={e => setFormData({...formData, discount: e.target.value})} required />
+                    <input 
+                        type="datetime-local" 
+                        className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 text-gray-900 ltr-input" 
+                        value={formData.expiryDate || ''} 
+                        onChange={e => setFormData({...formData, expiryDate: e.target.value})} 
+                        required
+                    />
+                </div>
                 
                 <select 
                     className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 text-gray-900" 

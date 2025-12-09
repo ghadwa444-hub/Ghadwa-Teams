@@ -40,6 +40,7 @@ export interface MenuItem {
     chefImg?: string;
     orderCount?: number;
     reviewsList?: Review[]; // New field for storing reviews
+    expiryDate?: string; // New field for offer expiration
 }
 
 export interface CartItem extends MenuItem {

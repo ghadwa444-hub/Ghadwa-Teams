@@ -96,7 +96,167 @@ export const INITIAL_CHEFS: Chef[] = [
   }
 ];
 
-export const INITIAL_ORDERS: Order[] = [];
+// Helper to get date string for X days ago
+const getDate = (daysAgo: number) => {
+    const d = new Date();
+    d.setDate(d.getDate() - daysAgo);
+    return d.toISOString().split('T')[0];
+};
+
+// Helper for future dates
+const getFutureDate = (hours: number) => {
+    const d = new Date();
+    d.setHours(d.getHours() + hours);
+    return d.toISOString();
+};
+
+export const INITIAL_ORDERS: Order[] = [
+    { 
+        id: 1023, 
+        customer: "أحمد علي", 
+        phone: "01012345678", 
+        address: "المعادي، شارع 9", 
+        date: getDate(0), 
+        total: 450, 
+        status: "pending", 
+        items: "نص تيس مندي",
+        itemsDetails: [{ id: 501, name: "نص تيس مندي", price: 450, quantity: 1, img: "", chef: "شيف حسن" }]
+    },
+    { 
+        id: 1022, 
+        customer: "سارة محمد", 
+        phone: "01123456789", 
+        address: "مدينة نصر", 
+        date: getDate(0), 
+        total: 180, 
+        status: "cooking", 
+        items: "محشي مشكل, ملوخية",
+        itemsDetails: [
+            { id: 301, name: "محشي مشكل", price: 150, quantity: 1, img: "", chef: "ماما فاطمة" },
+            { id: 303, name: "ملوخية", price: 30, quantity: 1, img: "", chef: "خالة نادية" }
+        ]
+    },
+    { 
+        id: 1021, 
+        customer: "محمود حسن", 
+        phone: "01234567890", 
+        address: "التجمع الخامس", 
+        date: getDate(0), 
+        total: 320, 
+        status: "out_for_delivery", 
+        items: "كيلو كفتة حاتي",
+        itemsDetails: [{ id: 502, name: "كيلو كفتة حاتي", price: 320, quantity: 1, img: "", chef: "شيف حسن" }]
+    },
+    { 
+        id: 1020, 
+        customer: "هدى إبراهيم", 
+        phone: "01555555555", 
+        address: "الزمالك", 
+        date: getDate(1), 
+        total: 650, 
+        status: "delivered", 
+        items: "بوكس المشاوي",
+        itemsDetails: [{ id: 804, name: "بوكس المشاوي", price: 650, quantity: 1, img: "", chef: "غدوة" }]
+    },
+    { 
+        id: 1019, 
+        customer: "خالد سعيد", 
+        phone: "01099999999", 
+        address: "الدقي", 
+        date: getDate(1), 
+        total: 220, 
+        status: "delivered", 
+        items: "بوكس الحلو الشرقي",
+        itemsDetails: [{ id: 802, name: "بوكس الحلو الشرقي", price: 220, quantity: 1, img: "", chef: "غدوة" }]
+    },
+    { 
+        id: 1018, 
+        customer: "نوران أحمد", 
+        phone: "01188888888", 
+        address: "مصر الجديدة", 
+        date: getDate(2), 
+        total: 150, 
+        status: "delivered", 
+        items: "مكرونة بشاميل",
+        itemsDetails: [{ id: 302, name: "مكرونة بشاميل", price: 150, quantity: 1, img: "", chef: "شيف حسن" }]
+    },
+    { 
+        id: 1017, 
+        customer: "كريم مجدي", 
+        phone: "01277777777", 
+        address: "المهندسين", 
+        date: getDate(2), 
+        total: 380, 
+        status: "delivered", 
+        items: "صينية جمبري",
+        itemsDetails: [{ id: 514, name: "صينية جمبري", price: 380, quantity: 1, img: "", chef: "ماما زينب" }]
+    },
+    { 
+        id: 1016, 
+        customer: "ياسمين عادل", 
+        phone: "01066666666", 
+        address: "الشيخ زايد", 
+        date: getDate(3), 
+        total: 900, 
+        status: "delivered", 
+        items: "نص تيس مندي, بسبوسة",
+        itemsDetails: [
+            { id: 501, name: "نص تيس مندي", price: 850, quantity: 1, img: "", chef: "شيف حسن" },
+            { id: 510, name: "بسبوسة", price: 50, quantity: 1, img: "", chef: "الشيف أحمد" }
+        ]
+    },
+    { 
+        id: 1015, 
+        customer: "عمر فاروق", 
+        phone: "01155555555", 
+        address: "أكتوبر", 
+        date: getDate(3), 
+        total: 180, 
+        status: "delivered", 
+        items: "بوكس الفطار",
+        itemsDetails: [{ id: 801, name: "بوكس الفطار", price: 180, quantity: 1, img: "", chef: "غدوة" }]
+    },
+    { 
+        id: 1014, 
+        customer: "منى زكي", 
+        phone: "01244444444", 
+        address: "حدائق القبة", 
+        date: getDate(4), 
+        total: 280, 
+        status: "delivered", 
+        items: "ورق عنب بالكوارع",
+        itemsDetails: [{ id: 504, name: "ورق عنب بالكوارع", price: 280, quantity: 1, img: "", chef: "ماما فاطمة" }]
+    },
+    { 
+        id: 1013, 
+        customer: "سامي يوسف", 
+        phone: "01033333333", 
+        address: "شبرا", 
+        date: getDate(5), 
+        total: 400, 
+        status: "delivered", 
+        items: "ممبار, حمام",
+        itemsDetails: [
+            { id: 517, name: "ممبار", price: 180, quantity: 1, img: "", chef: "ماما فاطمة" },
+            { id: 508, name: "حمام", price: 220, quantity: 1, img: "", chef: "ماما زينب" }
+        ]
+    },
+    { 
+        id: 1012, 
+        customer: "رانيا يوسف", 
+        phone: "01122222222", 
+        address: "المقطم", 
+        date: getDate(6), 
+        total: 1200, 
+        status: "delivered", 
+        items: "عزومة كاملة",
+        itemsDetails: [
+            { id: 501, name: "نص تيس", price: 850, quantity: 1, img: "", chef: "شيف حسن" },
+            { id: 301, name: "محشي", price: 150, quantity: 1, img: "", chef: "ماما فاطمة" },
+            { id: 511, name: "كنافة", price: 200, quantity: 1, img: "", chef: "الشيف أحمد" }
+        ]
+    }
+];
 
 export const INITIAL_MENU_ITEMS: MenuItem[] = [
     { id: 501, name: "نص تيس مندي", price: 850, category: "مشويات", categoryId: 'lunch', chef: "شيف حسن", img: "https://images.unsplash.com/photo-1596797038530-2c107229654b?q=80&w=2535&auto=format&fit=crop", rating: 4.9, time: "120 د" },
@@ -120,9 +280,39 @@ export const INITIAL_MENU_ITEMS: MenuItem[] = [
 ];
 
 export const INITIAL_OFFERS: MenuItem[] = [
-  { id: 201, name: "عرض العيلة (محشي + بط)", chef: "ماما فاطمة", chefImg: "https://images.unsplash.com/photo-1551218808-94e220e084d2?auto=format&fit=crop&q=80&w=500", oldPrice: 850, price: 650, img: "https://images.unsplash.com/photo-1541529086526-db283c563270?q=80&w=2070&auto=format&fit=crop", discount: "25%" },
-  { id: 202, name: "بوكس التوفير (مكرونة + بانيه)", chef: "الست أميرة", chefImg: "https://images.unsplash.com/photo-1566554273541-37a9ca77b91f?auto=format&fit=crop&q=80&w=500", oldPrice: 200, price: 150, img: "https://images.unsplash.com/photo-1606923829579-0cb981a83e2e?q=80&w=2070&auto=format&fit=crop", discount: "25%" },
-  { id: 203, name: "صينية سمك للعزومات", chef: "ماما زينب", chefImg: "https://images.unsplash.com/photo-1544124339-da6491f04a33?auto=format&fit=crop&q=80&w=500", oldPrice: 500, price: 380, img: "https://images.unsplash.com/photo-1534939561126-855b8675edd7?q=80&w=2574&auto=format&fit=crop", discount: "20%" },
+  { 
+      id: 201, 
+      name: "عرض العيلة (محشي + بط)", 
+      chef: "ماما فاطمة", 
+      chefImg: "https://images.unsplash.com/photo-1551218808-94e220e084d2?auto=format&fit=crop&q=80&w=500", 
+      oldPrice: 850, 
+      price: 650, 
+      img: "https://images.unsplash.com/photo-1541529086526-db283c563270?q=80&w=2070&auto=format&fit=crop", 
+      discount: "25%",
+      expiryDate: getFutureDate(12) // Ends in 12 hours
+  },
+  { 
+      id: 202, 
+      name: "بوكس التوفير (مكرونة + بانيه)", 
+      chef: "الست أميرة", 
+      chefImg: "https://images.unsplash.com/photo-1566554273541-37a9ca77b91f?auto=format&fit=crop&q=80&w=500", 
+      oldPrice: 200, 
+      price: 150, 
+      img: "https://images.unsplash.com/photo-1606923829579-0cb981a83e2e?q=80&w=2070&auto=format&fit=crop", 
+      discount: "25%",
+      expiryDate: getFutureDate(48) // Ends in 2 days
+  },
+  { 
+      id: 203, 
+      name: "صينية سمك للعزومات", 
+      chef: "ماما زينب", 
+      chefImg: "https://images.unsplash.com/photo-1544124339-da6491f04a33?auto=format&fit=crop&q=80&w=500", 
+      oldPrice: 500, 
+      price: 380, 
+      img: "https://images.unsplash.com/photo-1534939561126-855b8675edd7?q=80&w=2574&auto=format&fit=crop", 
+      discount: "20%",
+      expiryDate: getFutureDate(5) // Ends in 5 hours
+  },
 ];
 
 export const INITIAL_BOXES: Box[] = [

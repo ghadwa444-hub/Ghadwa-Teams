@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { MenuItem, CartItem } from '../../types';
 import { AddToCartButton } from '../UIHelpers';
 import { INITIAL_CHEFS } from '../../constants';
@@ -9,6 +9,54 @@ interface WeeklyOffersProps {
     cart: CartItem[];
     updateQuantity: (id: number, qty: number, item?: MenuItem) => void;
 }
+
+const CountdownTimer = ({ targetDate }: { targetDate?: string }) => {
+    const [timeLeft, setTimeLeft] = useState<{h: number, m: number, s: number} | null>(null);
+
+    useEffect(() => {
+        if (!targetDate) return;
+
+        const interval = setInterval(() => {
+            const now = new Date().getTime();
+            const distance = new Date(targetDate).getTime() - now;
+
+            if (distance < 0) {
+                clearInterval(interval);
+                setTimeLeft(null);
+            } else {
+                setTimeLeft({
+                    h: Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
+                    m: Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60)),
+                    s: Math.floor((distance % (1000 * 60)) / 1000)
+                });
+            }
+        }, 1000);
+
+        return () => clearInterval(interval);
+    }, [targetDate]);
+
+    if (!timeLeft) return (
+        <div className="w-full bg-gray-100 text-gray-400 py-2 rounded-xl text-center font-bold text-sm mb-4">
+            انتهى العرض
+        </div>
+    );
+
+    return (
+        <div className="flex items-center justify-center gap-3 bg-red-50 border-2 border-red-100 text-[#8B2525] px-4 py-3 rounded-2xl mb-4 w-full">
+            <i className="fa-solid fa-stopwatch text-2xl animate-pulse"></i>
+            <div className="flex flex-col items-center">
+                <div className="flex gap-1 text-2xl font-black font-mono direction-ltr leading-none">
+                    <span>{String(timeLeft.h).padStart(2, '0')}</span>
+                    <span className="animate-pulse">:</span>
+                    <span>{String(timeLeft.m).padStart(2, '0')}</span>
+                    <span className="animate-pulse">:</span>
+                    <span>{String(timeLeft.s).padStart(2, '0')}</span>
+                </div>
+                <span className="text-[10px] font-bold text-red-400 mt-1">ساعات : دقائق : ثواني</span>
+            </div>
+        </div>
+    );
+};
 
 export const WeeklyOffers: React.FC<WeeklyOffersProps> = ({ offers, cart, updateQuantity }) => {
     
@@ -72,17 +120,26 @@ export const WeeklyOffers: React.FC<WeeklyOffersProps> = ({ offers, cart, update
                                     <h3 className="font-bold text-xl">{offer.name}</h3>
                                 </div>
                             </div>
+                            
                             <div className="p-6 flex-grow flex flex-col justify-between">
-                                <div className="flex items-center justify-between mb-6">
-                                    <div className="flex flex-col">
-                                        <span className="text-gray-400 text-sm line-through decoration-red-400 decoration-2">{offer.oldPrice} ج.م</span>
-                                        <span className="text-[#8B2525] font-black text-3xl">{offer.price} <span className="text-sm font-bold text-gray-500">ج.م</span></span>
+                                <div>
+                                    <div className="flex items-center justify-between mb-4">
+                                        <div className="flex flex-col">
+                                            <span className="text-gray-400 text-sm line-through decoration-red-400 decoration-2">{offer.oldPrice} ج.م</span>
+                                            <span className="text-[#8B2525] font-black text-4xl">{offer.price} <span className="text-sm font-bold text-gray-500">ج.م</span></span>
+                                        </div>
+                                        <div className="w-14 h-14 rounded-full bg-red-50 flex items-center justify-center text-[#8B2525] text-2xl shadow-sm">
+                                            <i className="fa-solid fa-tags"></i>
+                                        </div>
                                     </div>
-                                    <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center text-[#8B2525] text-xl">
-                                        <i className="fa-solid fa-tags"></i>
-                                    </div>
+
+                                    {/* Timer Moved Here */}
+                                    {offer.expiryDate && (
+                                        <CountdownTimer targetDate={offer.expiryDate} />
+                                    )}
                                 </div>
-                                <AddToCartButton item={offer} cart={cart} updateQuantity={updateQuantity} className="h-12 w-full text-lg shadow-md" disabled={!isOpen} />
+
+                                <AddToCartButton item={offer} cart={cart} updateQuantity={updateQuantity} className="h-14 w-full text-lg shadow-md font-black" disabled={!isOpen} />
                             </div>
                         </div>
                     )})}
