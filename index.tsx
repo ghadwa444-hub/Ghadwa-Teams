@@ -2,12 +2,23 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import { logger } from './utils/logger';
+import './services/supabase'; // Initialize Supabase
+import './services/supabase-diagnostics'; // Initialize diagnostics
 
 // Log application startup
 logger.info('APP', '🚀 Ghadwa Application Starting', {
   timestamp: new Date().toISOString(),
   environment: 'development',
   userAgent: navigator.userAgent
+});
+
+// Log HMR configuration
+logger.debug('APP', '🔗 HMR configured for localhost:3000', {
+  hmr: {
+    host: 'localhost',
+    port: 3000,
+    protocol: 'ws'
+  }
 });
 
 const rootElement = document.getElementById('root');

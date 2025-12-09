@@ -8,6 +8,7 @@ import { logger } from './utils/logger';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
 import { Hero } from './components/Hero';
+import { SupabaseTest } from './components/SupabaseTest';
 import { Features } from './components/Features';
 import { CartDrawer } from './components/CartDrawer';
 import { AuthModal, MenuModal, ChefConflictModal, OrderSuccessModal, ClearCartModal, ReviewModal } from './components/Modals';
@@ -41,8 +42,30 @@ import { AdminContactSettings } from './components/admin/AdminContactSettings';
 import { DebugConsole } from './components/DebugConsole';
 
 const App = () => {
+    // Data State
+    const [chefs, setChefs] = useState<Chef[]>(INITIAL_CHEFS);
+    const [orders, setOrders] = useState<Order[]>(INITIAL_ORDERS);
+    const [menuItems, setMenuItems] = useState<MenuItem[]>(INITIAL_MENU_ITEMS);
+    const [offers, setOffers] = useState<MenuItem[]>(INITIAL_OFFERS);
+    const [boxes, setBoxes] = useState<Box[]>(INITIAL_BOXES);
+    const [bestSellers, setBestSellers] = useState<MenuItem[]>(INITIAL_BEST_SELLERS);
+    const [promoCodes, setPromoCodes] = useState<PromoCode[]>(INITIAL_PROMO_CODES);
+    const [contactSettings, setContactSettings] = useState<ContactSettings>(INITIAL_CONTACT_SETTINGS);
+    const [visitors, setVisitors] = useState(1250);
+
+    // UI State
     const [activePage, setActivePage] = useState('home');
     const [isLoading, setIsLoading] = useState(true);
+    const [showSupabaseTest, setShowSupabaseTest] = useState(false); // Dev: show Supabase test
+    
+    // App State
+    const [selectedChef, setSelectedChef] = useState<Chef | null>(null);
+    const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+    const [trackOrderId, setTrackOrderId] = useState<number | null>(null);
+    const [cart, setCart] = useState<CartItem[]>([]);
+    const [favorites, setFavorites] = useState<MenuItem[]>([]);
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
+    const [isAdmin, setIsAdmin] = useState(false);
     
     // Log component mount
     useEffect(() => {
@@ -62,26 +85,6 @@ const App = () => {
         });
     }, [activePage, isAdmin, isLoggedIn, cart.length]);
     
-    // Data State
-    const [chefs, setChefs] = useState<Chef[]>(INITIAL_CHEFS);
-    const [orders, setOrders] = useState<Order[]>(INITIAL_ORDERS);
-    const [menuItems, setMenuItems] = useState<MenuItem[]>(INITIAL_MENU_ITEMS);
-    const [offers, setOffers] = useState<MenuItem[]>(INITIAL_OFFERS);
-    const [boxes, setBoxes] = useState<Box[]>(INITIAL_BOXES);
-    const [bestSellers, setBestSellers] = useState<MenuItem[]>(INITIAL_BEST_SELLERS);
-    const [promoCodes, setPromoCodes] = useState<PromoCode[]>(INITIAL_PROMO_CODES);
-    const [contactSettings, setContactSettings] = useState<ContactSettings>(INITIAL_CONTACT_SETTINGS);
-    const [visitors, setVisitors] = useState(1250);
-
-    // App State
-    const [selectedChef, setSelectedChef] = useState<Chef | null>(null);
-    const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
-    const [trackOrderId, setTrackOrderId] = useState<number | null>(null);
-    const [cart, setCart] = useState<CartItem[]>([]);
-    const [favorites, setFavorites] = useState<MenuItem[]>([]);
-    const [isLoggedIn, setIsLoggedIn] = useState(false);
-    const [isAdmin, setIsAdmin] = useState(false);
-    
     const [isAuthOpen, setIsAuthOpen] = useState(false);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [isCartOpen, setIsCartOpen] = useState(false);
@@ -96,7 +99,10 @@ const App = () => {
     const currentChefName = cart.length > 0 ? cart[0].chef : null;
 
     // Find the most recent active order (not delivered) for the Live Tracker
-    const activeOrder = orders.find(o => o.status !== 'delivered');
+    // Sort by ID descending (newest first) and get the first non-delivered order
+    const activeOrder = [...orders]
+        .sort((a, b) => b.id - a.id)
+        .find(o => o.status !== 'delivered');
 
     // Fetch Data on Mount
     useEffect(() => {
@@ -478,6 +484,23 @@ const App = () => {
     return (
         <div className="min-h-screen bg-white text-gray-900 font-sans">
             <DebugConsole />
+            
+            {/* Supabase Test (DEV ONLY) */}
+            {showSupabaseTest && (
+                <div className="max-w-7xl mx-auto px-4 py-6">
+                    <div className="flex justify-between items-center mb-4">
+                        <h2 className="text-2xl font-bold">Supabase Connection Test</h2>
+                        <button
+                            onClick={() => setShowSupabaseTest(false)}
+                            className="px-4 py-2 bg-gray-300 hover:bg-gray-400 rounded text-gray-800 font-semibold"
+                        >
+                            Close
+                        </button>
+                    </div>
+                    <SupabaseTest />
+                </div>
+            )}
+            
             <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} onLogin={handleLogin} />
             <MenuModal isOpen={isMenuOpen} onClose={() => setIsMenuOpen(false)} />
             <CartDrawer 
