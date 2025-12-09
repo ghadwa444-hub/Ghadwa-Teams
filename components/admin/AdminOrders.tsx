@@ -49,10 +49,18 @@ export const AdminOrders: React.FC<AdminOrdersProps> = ({ orders, updateOrderSta
                 )}
                 {order.status === 'cooking' && (
                     <button 
+                        onClick={() => updateOrderStatus(order.id, 'out_for_delivery')} 
+                        className="bg-blue-100 text-blue-700 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-blue-200 transition flex items-center gap-1"
+                    >
+                        تسليم للطيار <i className="fa-solid fa-motorcycle"></i>
+                    </button>
+                )}
+                {order.status === 'out_for_delivery' && (
+                    <button 
                         onClick={() => updateOrderStatus(order.id, 'delivered')} 
                         className="bg-green-100 text-green-700 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-green-200 transition flex items-center gap-1"
                     >
-                        توصيل الطلب <i className="fa-solid fa-check"></i>
+                        تم التوصيل <i className="fa-solid fa-check"></i>
                     </button>
                 )}
                 {order.status === 'delivered' && (
@@ -110,10 +118,13 @@ export const AdminOrders: React.FC<AdminOrdersProps> = ({ orders, updateOrderSta
                                     <td className="p-5">
                                         <span className={`px-3 py-1 rounded-full text-xs font-bold ${
                                                 order.status === 'delivered' ? 'bg-green-100 text-green-700' :
+                                                order.status === 'out_for_delivery' ? 'bg-blue-100 text-blue-700' :
                                                 order.status === 'cooking' ? 'bg-orange-100 text-orange-700' :
                                                 'bg-yellow-100 text-yellow-700'
                                             }`}>
-                                                {order.status === 'delivered' ? 'تم التوصيل' : order.status === 'cooking' ? 'جاري التحضير' : 'قيد الانتظار'}
+                                                {order.status === 'delivered' ? 'تم التوصيل' : 
+                                                 order.status === 'out_for_delivery' ? 'مع الطيار' :
+                                                 order.status === 'cooking' ? 'جاري التحضير' : 'قيد الانتظار'}
                                         </span>
                                     </td>
                                     <td className="p-5 flex gap-2">
@@ -127,6 +138,7 @@ export const AdminOrders: React.FC<AdminOrdersProps> = ({ orders, updateOrderSta
                                         >
                                             <option value="pending">قيد الانتظار</option>
                                             <option value="cooking">جاري التحضير</option>
+                                            <option value="out_for_delivery">تم الاستلام من الدليفري</option>
                                             <option value="delivered">تم التوصيل</option>
                                         </select>
                                         <button 
@@ -143,12 +155,12 @@ export const AdminOrders: React.FC<AdminOrdersProps> = ({ orders, updateOrderSta
                     </table>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 flex-1 min-h-0">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 flex-1 min-h-0">
                     {/* Pending Column */}
                     <div className="flex flex-col bg-gray-50 rounded-2xl border border-gray-200 h-full overflow-hidden">
                         <div className="p-4 border-b border-gray-200 bg-yellow-50 flex justify-between items-center">
-                            <h3 className="font-bold text-yellow-800 flex items-center gap-2">
-                                <i className="fa-regular fa-clock"></i> قيد الانتظار
+                            <h3 className="font-bold text-yellow-800 flex items-center gap-2 text-sm">
+                                <i className="fa-regular fa-clock"></i> الانتظار
                             </h3>
                             <span className="bg-white px-2 py-1 rounded-lg text-xs font-bold text-yellow-800 shadow-sm border border-yellow-100">
                                 {orders.filter(o => o.status === 'pending').length}
@@ -158,17 +170,14 @@ export const AdminOrders: React.FC<AdminOrdersProps> = ({ orders, updateOrderSta
                             {orders.filter(o => o.status === 'pending').map(order => (
                                 <OrderCard key={order.id} order={order} />
                             ))}
-                            {orders.filter(o => o.status === 'pending').length === 0 && (
-                                <div className="text-center py-12 text-gray-400 text-sm italic">مفيش طلبات جديدة</div>
-                            )}
                         </div>
                     </div>
 
                     {/* Cooking Column */}
                     <div className="flex flex-col bg-gray-50 rounded-2xl border border-gray-200 h-full overflow-hidden">
                         <div className="p-4 border-b border-gray-200 bg-orange-50 flex justify-between items-center">
-                            <h3 className="font-bold text-orange-800 flex items-center gap-2">
-                                <i className="fa-solid fa-fire-burner"></i> جاري التحضير
+                            <h3 className="font-bold text-orange-800 flex items-center gap-2 text-sm">
+                                <i className="fa-solid fa-fire-burner"></i> التحضير
                             </h3>
                             <span className="bg-white px-2 py-1 rounded-lg text-xs font-bold text-orange-800 shadow-sm border border-orange-100">
                                 {orders.filter(o => o.status === 'cooking').length}
@@ -178,17 +187,31 @@ export const AdminOrders: React.FC<AdminOrdersProps> = ({ orders, updateOrderSta
                             {orders.filter(o => o.status === 'cooking').map(order => (
                                 <OrderCard key={order.id} order={order} />
                             ))}
-                             {orders.filter(o => o.status === 'cooking').length === 0 && (
-                                <div className="text-center py-12 text-gray-400 text-sm italic">المطبخ هادي حالياً</div>
-                            )}
+                        </div>
+                    </div>
+
+                    {/* Out for Delivery Column */}
+                    <div className="flex flex-col bg-gray-50 rounded-2xl border border-gray-200 h-full overflow-hidden">
+                        <div className="p-4 border-b border-gray-200 bg-blue-50 flex justify-between items-center">
+                            <h3 className="font-bold text-blue-800 flex items-center gap-2 text-sm">
+                                <i className="fa-solid fa-motorcycle"></i> الطريق
+                            </h3>
+                            <span className="bg-white px-2 py-1 rounded-lg text-xs font-bold text-blue-800 shadow-sm border border-blue-100">
+                                {orders.filter(o => o.status === 'out_for_delivery').length}
+                            </span>
+                        </div>
+                        <div className="p-4 overflow-y-auto flex-1 custom-scrollbar space-y-3">
+                            {orders.filter(o => o.status === 'out_for_delivery').map(order => (
+                                <OrderCard key={order.id} order={order} />
+                            ))}
                         </div>
                     </div>
 
                     {/* Delivered Column */}
                     <div className="flex flex-col bg-gray-50 rounded-2xl border border-gray-200 h-full overflow-hidden">
                         <div className="p-4 border-b border-gray-200 bg-green-50 flex justify-between items-center">
-                            <h3 className="font-bold text-green-800 flex items-center gap-2">
-                                <i className="fa-solid fa-check-double"></i> تم التوصيل
+                            <h3 className="font-bold text-green-800 flex items-center gap-2 text-sm">
+                                <i className="fa-solid fa-check-double"></i> تم
                             </h3>
                             <span className="bg-white px-2 py-1 rounded-lg text-xs font-bold text-green-800 shadow-sm border border-green-100">
                                 {orders.filter(o => o.status === 'delivered').length}
@@ -198,9 +221,6 @@ export const AdminOrders: React.FC<AdminOrdersProps> = ({ orders, updateOrderSta
                             {orders.filter(o => o.status === 'delivered').map(order => (
                                 <OrderCard key={order.id} order={order} />
                             ))}
-                             {orders.filter(o => o.status === 'delivered').length === 0 && (
-                                <div className="text-center py-12 text-gray-400 text-sm italic">لسه مفيش طلبات وصلت</div>
-                            )}
                         </div>
                     </div>
                 </div>

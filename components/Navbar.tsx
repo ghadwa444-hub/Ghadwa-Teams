@@ -53,6 +53,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigate, currentPage, cartCou
                     <a href="#chefs" onClick={(e) => handleSectionClick(e, 'chefs')} className="font-bold text-gray-600 hover:text-[#8B2525] transition">الشيفات</a>
                     <a href="#weekly-offers" onClick={(e) => handleSectionClick(e, 'weekly-offers')} className="font-bold text-gray-600 hover:text-[#8B2525] transition">العروض</a>
                     <button onClick={onOpenMenu} className="font-bold text-gray-600 hover:text-[#8B2525] transition">المنيو</button>
+                    <button onClick={() => onNavigate('track-order')} className={`font-bold hover:text-[#8B2525] transition ${currentPage === 'track-order' ? 'text-[#8B2525]' : 'text-gray-600'}`}>تتبع طلبك</button>
                 </div>
                 <div className="flex items-center gap-4">
                     <button onClick={() => onNavigate('favorites')} className="relative w-12 h-12 bg-white border border-gray-200 shadow-md rounded-full flex items-center justify-center hover:bg-[#8B2525] hover:text-white hover:border-[#8B2525] transition-all duration-300 group">
@@ -108,6 +109,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigate, currentPage, cartCou
                     <button onClick={(e) => { handleSectionClick(e, 'chefs'); setMobileMenuOpen(false); }} className="text-right font-bold text-gray-700 py-2 border-b border-gray-50">الشيفات</button>
                     <button onClick={(e) => { handleSectionClick(e, 'weekly-offers'); setMobileMenuOpen(false); }} className="text-right font-bold text-gray-700 py-2 border-b border-gray-50">العروض</button>
                     <button onClick={() => { onOpenMenu(); setMobileMenuOpen(false); }} className="text-right font-bold text-gray-700 py-2 border-b border-gray-50">المنيو</button>
+                    <button onClick={() => { onNavigate('track-order'); setMobileMenuOpen(false); }} className="text-right font-bold text-gray-700 py-2 border-b border-gray-50">تتبع طلبك</button>
                     <button onClick={() => { onNavigate('favorites'); setMobileMenuOpen(false); }} className="text-right font-bold text-gray-700 py-2 border-b border-gray-50">المفضلة</button>
                     {!isLoggedIn && (
                         <a href={`https://wa.me/${whatsappNumber}`} target="_blank" rel="noreferrer" className="text-right font-bold text-green-500 py-2 border-b border-gray-50 flex items-center gap-2">

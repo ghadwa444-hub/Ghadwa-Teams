@@ -23,6 +23,7 @@ import { ChefDetailsPage } from './pages/ChefDetailsPage';
 import { CheckoutPage } from './pages/CheckoutPage';
 import { AllChefsPage } from './pages/AllChefsPage';
 import { FavoritesPage } from './pages/FavoritesPage';
+import { TrackOrderPage } from './pages/TrackOrderPage';
 
 // Admin
 import { AdminSidebar } from './components/admin/AdminSidebar';
@@ -55,6 +56,7 @@ const App = () => {
     // App State
     const [selectedChef, setSelectedChef] = useState<Chef | null>(null);
     const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+    const [trackOrderId, setTrackOrderId] = useState<number | null>(null);
     const [cart, setCart] = useState<CartItem[]>([]);
     const [favorites, setFavorites] = useState<MenuItem[]>([]);
     const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -344,6 +346,11 @@ const App = () => {
             <OrderSuccessModal 
                 isOpen={orderSuccess.isOpen} 
                 orderId={orderSuccess.orderId} 
+                onTrack={() => {
+                    setOrderSuccess({ ...orderSuccess, isOpen: false });
+                    setTrackOrderId(orderSuccess.orderId);
+                    setActivePage('track-order');
+                }}
                 onClose={() => {
                     setOrderSuccess({ ...orderSuccess, isOpen: false });
                     setActivePage('home');
@@ -363,10 +370,10 @@ const App = () => {
                          {activePage === 'admin-orders' && <AdminOrders orders={orders} updateOrderStatus={updateOrderStatus} onDeleteOrder={handleDeleteOrder} onViewOrder={handleViewOrder} />}
                          {activePage === 'admin-order-details' && <AdminOrderDetails order={selectedOrder} onBack={() => setActivePage('admin-orders')} updateOrderStatus={updateOrderStatus} />}
                          {activePage === 'admin-chefs' && <AdminChefs chefs={chefs} orders={orders} toggleChefStatus={toggleChefStatus} onAdd={handleAddChef} onEdit={handleEditChef} onDelete={handleDeleteChef} />}
-                         {activePage === 'admin-meals' && <AdminMeals meals={menuItems} onAdd={handleAddMeal} onEdit={handleEditMeal} onDelete={handleDeleteMeal} />}
-                         {activePage === 'admin-offers' && <AdminOffers offers={offers} onAdd={handleAddOffer} onEdit={handleEditOffer} onDelete={handleDeleteOffer} />}
-                         {activePage === 'admin-boxes' && <AdminBoxes boxes={boxes} onAdd={handleAddBox} onEdit={handleEditBox} onDelete={handleDeleteBox} />}
-                         {activePage === 'admin-bestsellers' && <AdminBestSellers bestSellers={bestSellers} onAdd={handleAddBestSeller} onEdit={handleEditBestSeller} onDelete={handleDeleteBestSeller} />}
+                         {activePage === 'admin-meals' && <AdminMeals meals={menuItems} chefs={chefs} onAdd={handleAddMeal} onEdit={handleEditMeal} onDelete={handleDeleteMeal} />}
+                         {activePage === 'admin-offers' && <AdminOffers offers={offers} chefs={chefs} onAdd={handleAddOffer} onEdit={handleEditOffer} onDelete={handleDeleteOffer} />}
+                         {activePage === 'admin-boxes' && <AdminBoxes boxes={boxes} chefs={chefs} onAdd={handleAddBox} onEdit={handleEditBox} onDelete={handleDeleteBox} />}
+                         {activePage === 'admin-bestsellers' && <AdminBestSellers bestSellers={bestSellers} chefs={chefs} onAdd={handleAddBestSeller} onEdit={handleEditBestSeller} onDelete={handleDeleteBestSeller} />}
                          {activePage === 'admin-promos' && <AdminPromoCodes promoCodes={promoCodes} onAdd={handleAddPromo} onDelete={handleDeletePromo} />}
                          {activePage === 'admin-settings' && <AdminContactSettings settings={contactSettings} onUpdate={handleUpdateContactSettings} />}
                     </div>
@@ -404,6 +411,14 @@ const App = () => {
                             <BoxesSection boxes={boxes} cart={cart} updateQuantity={updateQuantity} />
                             <FullMenu menuItems={menuItems} cart={cart} updateQuantity={updateQuantity} />
                         </main>
+                    )}
+
+                    {activePage === 'track-order' && (
+                        <TrackOrderPage 
+                            orders={orders}
+                            initialOrderId={trackOrderId}
+                            onBack={() => setActivePage('home')}
+                        />
                     )}
 
                     {activePage === 'chef-details' && selectedChef && (

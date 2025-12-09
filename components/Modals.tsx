@@ -218,9 +218,10 @@ interface OrderSuccessModalProps {
     isOpen: boolean;
     onClose: () => void;
     orderId: number | null;
+    onTrack: () => void;
 }
 
-export const OrderSuccessModal: React.FC<OrderSuccessModalProps> = ({ isOpen, onClose, orderId }) => {
+export const OrderSuccessModal: React.FC<OrderSuccessModalProps> = ({ isOpen, onClose, orderId, onTrack }) => {
     if (!isOpen) return null;
 
     return (
@@ -237,15 +238,23 @@ export const OrderSuccessModal: React.FC<OrderSuccessModalProps> = ({ isOpen, on
                 <p className="text-gray-500 text-sm mb-8 leading-relaxed">
                     شكراً لثقتك في غدوة ❤️<br />
                     طلبك رقم <span className="font-bold text-gray-900 bg-gray-100 px-2 py-0.5 rounded mx-1">#{orderId}</span> وصل للشيف.<br />
-                    هيتجهز ويوصلك سخن في أسرع وقت.
+                    تقدر تتابع حالة الطلب دلوقتي.
                 </p>
 
-                <button
-                    onClick={onClose}
-                    className="w-full bg-[#8B2525] text-white py-4 rounded-xl font-bold text-lg shadow-lg hover:bg-[#6b1c1c] hover:shadow-xl hover:-translate-y-1 transition-all active:scale-95"
-                >
-                    تمام، متابعة
-                </button>
+                <div className="flex flex-col gap-3">
+                    <button
+                        onClick={onTrack}
+                        className="w-full bg-[#8B2525] text-white py-4 rounded-xl font-bold text-lg shadow-lg hover:bg-[#6b1c1c] transition-all active:scale-95"
+                    >
+                        تتبع الطلب 🛵
+                    </button>
+                    <button
+                        onClick={onClose}
+                        className="w-full bg-gray-100 text-gray-700 py-3 rounded-xl font-bold hover:bg-gray-200 transition-all"
+                    >
+                        متابعة التسوق
+                    </button>
+                </div>
             </div>
         </div>
     );

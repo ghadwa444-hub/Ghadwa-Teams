@@ -14,6 +14,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ orders, chefs, m
     const totalRevenue = orders.reduce((acc, curr) => acc + (Number(curr.total) || 0), 0);
     const activeOrders = orders.filter(o => o.status === 'pending' || o.status === 'cooking').length;
     const activeChefs = chefs.filter(c => c.isOpen).length;
+    
+    // Calculate additional stats
+    const averageOrderValue = orders.length > 0 ? Math.round(totalRevenue / orders.length) : 0;
+    
+    // Calculate unique customers (simulated by unique names)
+    const uniqueCustomers = new Set(orders.map(o => o.customer)).size;
 
     // Simulate Top Chef
     const topChef = chefs[0] || { name: 'N/A', img: '', orders: '0', rating: 0 };
@@ -43,8 +49,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ orders, chefs, m
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <AdminStatsCard title="إجمالي المبيعات" value={`${totalRevenue} ج.م`} icon="fa-solid fa-money-bill-wave" color="bg-gradient-to-br from-green-100 to-green-50 text-green-600" />
                 <AdminStatsCard title="الطلبات النشطة" value={String(activeOrders)} icon="fa-solid fa-bell" color="bg-gradient-to-br from-orange-100 to-orange-50 text-orange-600" />
-                <AdminStatsCard title="الشيفات المتاحين" value={String(activeChefs)} icon="fa-solid fa-user-check" color="bg-gradient-to-br from-blue-100 to-blue-50 text-blue-600" />
-                <AdminStatsCard title="إجمالي الطلبات" value={String(orders.length)} icon="fa-solid fa-receipt" color="bg-gradient-to-br from-pink-100 to-pink-50 text-pink-600" />
+                <AdminStatsCard title="متوسط قيمة الطلب" value={`${averageOrderValue} ج.م`} icon="fa-solid fa-scale-balanced" color="bg-gradient-to-br from-purple-100 to-purple-50 text-purple-600" />
+                <AdminStatsCard title="عدد العملاء" value={String(uniqueCustomers)} icon="fa-solid fa-users" color="bg-gradient-to-br from-teal-100 to-teal-50 text-teal-600" />
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                 <AdminStatsCard title="الشيفات المتاحين" value={String(activeChefs)} icon="fa-solid fa-user-check" color="bg-gradient-to-br from-blue-100 to-blue-50 text-blue-600" />
+                 <AdminStatsCard title="إجمالي الطلبات" value={String(orders.length)} icon="fa-solid fa-receipt" color="bg-gradient-to-br from-pink-100 to-pink-50 text-pink-600" />
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

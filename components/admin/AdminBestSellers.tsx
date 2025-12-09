@@ -1,16 +1,17 @@
 
 import React, { useState } from 'react';
-import { MenuItem } from '../../types';
+import { MenuItem, Chef } from '../../types';
 import { AdminFormModal } from '../Modals';
 
 interface AdminBestSellersProps {
     bestSellers: MenuItem[];
+    chefs: Chef[];
     onAdd: (item: MenuItem) => void;
     onEdit: (item: MenuItem) => void;
     onDelete: (id: number) => void;
 }
 
-export const AdminBestSellers: React.FC<AdminBestSellersProps> = ({ bestSellers, onAdd, onEdit, onDelete }) => {
+export const AdminBestSellers: React.FC<AdminBestSellersProps> = ({ bestSellers, chefs, onAdd, onEdit, onDelete }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [currentItem, setCurrentItem] = useState<MenuItem | null>(null);
     const [formData, setFormData] = useState<any>({ name: '', price: '', category: '', chef: '', desc: '', img: '' });
@@ -71,6 +72,7 @@ export const AdminBestSellers: React.FC<AdminBestSellersProps> = ({ bestSellers,
                                 <td className="p-4 flex gap-2">
                                     <button onClick={() => openEdit(item)} className="text-blue-500 bg-blue-50 p-2 rounded-lg hover:bg-blue-100 transition"><i className="fa-solid fa-pen"></i></button>
                                     <button 
+                                        type="button"
                                         onClick={(e) => { e.stopPropagation(); onDelete(item.id); }} 
                                         className="text-red-500 bg-red-50 p-2 rounded-lg hover:bg-red-100 transition"
                                     >
@@ -87,7 +89,19 @@ export const AdminBestSellers: React.FC<AdminBestSellersProps> = ({ bestSellers,
                 <input type="text" placeholder="اسم الوجبة" className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 text-gray-900" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} required />
                 <input type="number" placeholder="السعر" className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 text-gray-900" value={formData.price} onChange={e => setFormData({...formData, price: e.target.value})} required />
                 <input type="text" placeholder="التصنيف (محاشي، طواجن...)" className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 text-gray-900" value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} required />
-                <input type="text" placeholder="اسم الشيف" className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 text-gray-900" value={formData.chef} onChange={e => setFormData({...formData, chef: e.target.value})} required />
+                
+                <select 
+                    className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 text-gray-900" 
+                    value={formData.chef} 
+                    onChange={e => setFormData({...formData, chef: e.target.value})}
+                    required
+                >
+                    <option value="" disabled>اختر الشيف</option>
+                    {chefs.map(chef => (
+                        <option key={chef.id} value={chef.name}>{chef.name}</option>
+                    ))}
+                </select>
+
                 <textarea placeholder="وصف الوجبة" className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 text-gray-900 h-24" value={formData.desc} onChange={e => setFormData({...formData, desc: e.target.value})} required></textarea>
                 <input type="text" placeholder="رابط الصورة" className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 text-gray-900" value={formData.img} onChange={e => setFormData({...formData, img: e.target.value})} />
             </AdminFormModal>

@@ -90,6 +90,7 @@ export const AdminChefs: React.FC<AdminChefsProps> = ({ chefs, orders, toggleChe
                                 {/* Action Buttons - Always Visible on Mobile, Hover on Desktop */}
                                 <div className="absolute top-4 right-4 flex gap-2">
                                     <button 
+                                        type="button"
                                         onClick={() => openEdit(chef)} 
                                         className="w-8 h-8 rounded-full bg-white/90 backdrop-blur text-blue-600 flex items-center justify-center hover:bg-blue-500 hover:text-white shadow-sm transition-all"
                                         title="تعديل"
@@ -97,12 +98,10 @@ export const AdminChefs: React.FC<AdminChefsProps> = ({ chefs, orders, toggleChe
                                         <i className="fa-solid fa-pen text-xs"></i>
                                     </button>
                                     <button 
+                                        type="button"
                                         onClick={(e) => { 
                                             e.stopPropagation(); 
-                                            // Ensure we are calling the delete handler passed from parent
-                                            if (window.confirm('هل أنت متأكد من حذف هذا الشيف؟')) {
-                                                onDelete(chef.id); 
-                                            }
+                                            onDelete(chef.id); 
                                         }} 
                                         className="w-8 h-8 rounded-full bg-white/90 backdrop-blur text-red-600 flex items-center justify-center hover:bg-red-500 hover:text-white shadow-sm transition-all"
                                         title="حذف"

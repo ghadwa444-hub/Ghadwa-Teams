@@ -72,6 +72,7 @@ export const AdminPromoCodes: React.FC<AdminPromoCodesProps> = ({ promoCodes, on
                                     </td>
                                     <td className="p-4">
                                         <button 
+                                            type="button"
                                             onClick={(e) => { e.stopPropagation(); onDelete(promo.id); }} 
                                             className="text-red-500 bg-red-50 p-2 rounded-lg hover:bg-red-100 transition"
                                         >

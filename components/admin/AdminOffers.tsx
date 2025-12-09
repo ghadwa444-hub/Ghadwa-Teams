@@ -1,16 +1,17 @@
 
 import React, { useState } from 'react';
-import { MenuItem } from '../../types';
+import { MenuItem, Chef } from '../../types';
 import { AdminFormModal } from '../Modals';
 
 interface AdminOffersProps {
     offers: MenuItem[];
+    chefs: Chef[];
     onAdd: (offer: MenuItem) => void;
     onEdit: (offer: MenuItem) => void;
     onDelete: (id: number) => void;
 }
 
-export const AdminOffers: React.FC<AdminOffersProps> = ({ offers, onAdd, onEdit, onDelete }) => {
+export const AdminOffers: React.FC<AdminOffersProps> = ({ offers, chefs, onAdd, onEdit, onDelete }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [currentOffer, setCurrentOffer] = useState<MenuItem | null>(null);
     const [formData, setFormData] = useState<any>({ name: '', price: '', oldPrice: '', discount: '', chef: '', img: '' });
@@ -92,7 +93,19 @@ export const AdminOffers: React.FC<AdminOffersProps> = ({ offers, onAdd, onEdit,
                     <input type="number" placeholder="السعر القديم" className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 text-gray-900" value={formData.oldPrice} onChange={e => setFormData({...formData, oldPrice: e.target.value})} required />
                 </div>
                 <input type="text" placeholder="نسبة الخصم (25%)" className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 text-gray-900" value={formData.discount} onChange={e => setFormData({...formData, discount: e.target.value})} required />
-                <input type="text" placeholder="اسم الشيف" className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 text-gray-900" value={formData.chef} onChange={e => setFormData({...formData, chef: e.target.value})} required />
+                
+                <select 
+                    className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 text-gray-900" 
+                    value={formData.chef} 
+                    onChange={e => setFormData({...formData, chef: e.target.value})}
+                    required
+                >
+                    <option value="" disabled>اختر الشيف</option>
+                    {chefs.map(chef => (
+                        <option key={chef.id} value={chef.name}>{chef.name}</option>
+                    ))}
+                </select>
+
                 <input type="text" placeholder="رابط الصورة" className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 text-gray-900" value={formData.img} onChange={e => setFormData({...formData, img: e.target.value})} />
             </AdminFormModal>
         </div>

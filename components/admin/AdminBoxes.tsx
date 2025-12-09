@@ -1,16 +1,17 @@
 
 import React, { useState } from 'react';
-import { Box } from '../../types';
+import { Box, Chef } from '../../types';
 import { AdminFormModal } from '../Modals';
 
 interface AdminBoxesProps {
     boxes: Box[];
+    chefs: Chef[];
     onAdd: (box: Box) => void;
     onEdit: (box: Box) => void;
     onDelete: (id: number) => void;
 }
 
-export const AdminBoxes: React.FC<AdminBoxesProps> = ({ boxes, onAdd, onEdit, onDelete }) => {
+export const AdminBoxes: React.FC<AdminBoxesProps> = ({ boxes, chefs, onAdd, onEdit, onDelete }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [currentBox, setCurrentBox] = useState<Box | null>(null);
     const [formData, setFormData] = useState<any>({ name: '', price: '', serves: '', chef: '', itemsString: '', img: '' });
@@ -55,6 +56,7 @@ export const AdminBoxes: React.FC<AdminBoxesProps> = ({ boxes, onAdd, onEdit, on
                          <div className="absolute top-4 left-4 flex gap-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
                             <button onClick={() => openEdit(box)} className="w-8 h-8 rounded-full bg-white shadow text-blue-600 flex items-center justify-center hover:bg-gray-50"><i className="fa-solid fa-pen"></i></button>
                             <button 
+                                type="button"
                                 onClick={(e) => { e.stopPropagation(); onDelete(box.id); }} 
                                 className="w-8 h-8 rounded-full bg-white shadow text-red-600 flex items-center justify-center hover:bg-gray-50"
                             >
@@ -85,7 +87,19 @@ export const AdminBoxes: React.FC<AdminBoxesProps> = ({ boxes, onAdd, onEdit, on
                     <input type="number" placeholder="السعر" className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 text-gray-900" value={formData.price} onChange={e => setFormData({...formData, price: e.target.value})} required />
                     <input type="text" placeholder="يكفي كام فرد (مثلاً: 4 أفراد)" className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 text-gray-900" value={formData.serves} onChange={e => setFormData({...formData, serves: e.target.value})} required />
                 </div>
-                <input type="text" placeholder="اسم الشيف" className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 text-gray-900" value={formData.chef} onChange={e => setFormData({...formData, chef: e.target.value})} required />
+                
+                <select 
+                    className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 text-gray-900" 
+                    value={formData.chef} 
+                    onChange={e => setFormData({...formData, chef: e.target.value})}
+                    required
+                >
+                    <option value="" disabled>اختر الشيف</option>
+                    {chefs.map(chef => (
+                        <option key={chef.id} value={chef.name}>{chef.name}</option>
+                    ))}
+                </select>
+
                 <textarea placeholder="مكونات البوكس (افصل بينهم بفاصلة ,)" className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 text-gray-900 h-24" value={formData.itemsString} onChange={e => setFormData({...formData, itemsString: e.target.value})} required></textarea>
                 <input type="text" placeholder="رابط الصورة" className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 text-gray-900" value={formData.img} onChange={e => setFormData({...formData, img: e.target.value})} />
             </AdminFormModal>
