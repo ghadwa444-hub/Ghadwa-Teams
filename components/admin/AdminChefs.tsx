@@ -5,7 +5,7 @@ import { AdminFormModal } from '../Modals';
 
 interface AdminChefsProps {
     chefs: Chef[];
-    orders: Order[]; // Added orders to props to calculate stats
+    orders: Order[];
     toggleChefStatus: (id: number) => void;
     onAdd: (chef: Chef) => void;
     onEdit: (chef: Chef) => void;
@@ -44,12 +44,10 @@ export const AdminChefs: React.FC<AdminChefsProps> = ({ chefs, orders, toggleChe
         let totalRevenue = 0;
 
         orders.forEach(order => {
-            // Check itemsDetails to see if this order contains items from this chef
             if (order.itemsDetails && Array.isArray(order.itemsDetails)) {
                 const chefItems = order.itemsDetails.filter(item => item.chef === chefName);
                 if (chefItems.length > 0) {
-                    orderCount++; // Increment order count if chef has items in this order
-                    // Calculate revenue from this chef's items in this order
+                    orderCount++;
                     const revenue = chefItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
                     totalRevenue += revenue;
                 }
@@ -73,51 +71,62 @@ export const AdminChefs: React.FC<AdminChefsProps> = ({ chefs, orders, toggleChe
                     const stats = getChefStats(chef.name);
                     
                     return (
-                        <div key={chef.id} className={`bg-white rounded-2xl p-6 border transition-all ${chef.isOpen ? 'border-green-200 shadow-green-100' : 'border-gray-200 opacity-75' } shadow-sm relative group`}>
+                        <div key={chef.id} className={`bg-white rounded-2xl border transition-all ${chef.isOpen ? 'border-green-200 shadow-green-100' : 'border-gray-200 opacity-75' } shadow-sm relative group overflow-hidden`}>
+                             {/* Cover Image */}
+                             <div className="h-24 w-full relative bg-gray-100">
+                                <img src={chef.cover} alt={`${chef.name} cover`} className="w-full h-full object-cover" />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
+                             </div>
+
                              <div className="absolute top-4 left-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                                <button onClick={() => openEdit(chef)} className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center hover:bg-blue-200"><i className="fa-solid fa-pen"></i></button>
+                                <button onClick={() => openEdit(chef)} className="w-8 h-8 rounded-full bg-white text-blue-600 flex items-center justify-center hover:bg-gray-100 shadow-sm"><i className="fa-solid fa-pen"></i></button>
                                 <button 
                                     onClick={(e) => { e.stopPropagation(); onDelete(chef.id); }} 
-                                    className="w-8 h-8 rounded-full bg-red-100 text-red-600 flex items-center justify-center hover:bg-red-200"
+                                    className="w-8 h-8 rounded-full bg-white text-red-600 flex items-center justify-center hover:bg-gray-100 shadow-sm"
                                 >
                                     <i className="fa-solid fa-trash"></i>
                                 </button>
                              </div>
-                            <div className="flex items-center gap-4 mb-4">
-                                <img src={chef.img} alt={chef.name} className="w-16 h-16 rounded-full object-cover" />
-                                <div>
-                                    <h3 className="font-bold text-lg text-gray-900">{chef.name}</h3>
-                                    <p className="text-sm text-gray-500">{chef.specialty}</p>
-                                </div>
-                            </div>
                             
-                            {/* Performance Stats */}
-                            <div className="grid grid-cols-2 gap-3 mb-4 bg-gray-50 p-3 rounded-xl border border-gray-100">
-                                <div className="text-center">
-                                    <p className="text-xs text-gray-500 mb-1">عدد الطلبات</p>
-                                    <p className="font-bold text-gray-900">{stats.orderCount}</p>
+                            <div className="p-6 pt-0">
+                                {/* Profile Image and Name */}
+                                <div className="flex items-end -mt-8 mb-4">
+                                     <img src={chef.img} alt={chef.name} className="w-16 h-16 rounded-full object-cover border-4 border-white shadow-md z-10 bg-white" />
+                                     <div className="mr-3 mb-1">
+                                        <h3 className="font-bold text-lg text-gray-900 leading-tight">{chef.name}</h3>
+                                        <p className="text-sm text-gray-500">{chef.specialty}</p>
+                                     </div>
                                 </div>
-                                <div className="text-center border-r border-gray-200">
-                                    <p className="text-xs text-gray-500 mb-1">إجمالي الأرباح</p>
-                                    <p className="font-bold text-[#8B2525]">{stats.totalRevenue} ج.م</p>
+                                
+                                {/* Performance Stats */}
+                                <div className="grid grid-cols-2 gap-3 mb-4 bg-gray-50 p-3 rounded-xl border border-gray-100">
+                                    <div className="text-center">
+                                        <p className="text-xs text-gray-500 mb-1">عدد الطلبات</p>
+                                        <p className="font-bold text-gray-900">{stats.orderCount}</p>
+                                    </div>
+                                    <div className="text-center border-r border-gray-200">
+                                        <p className="text-xs text-gray-500 mb-1">إجمالي الأرباح</p>
+                                        <p className="font-bold text-[#8B2525]">{stats.totalRevenue} ج.م</p>
+                                    </div>
                                 </div>
-                            </div>
 
-                            <div className="text-sm text-gray-500 mb-4 space-y-1">
-                                <div className="flex items-center gap-2"><i className="fa-regular fa-clock"></i> {chef.workingHours}</div>
-                                <div className="flex items-center gap-2"><i className="fa-solid fa-truck-fast"></i> توصيل خلال {chef.deliveryTime}</div>
-                            </div>
-                            <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-                                 <div className="flex items-center gap-2">
-                                    <span className={`w-3 h-3 rounded-full ${chef.isOpen ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></span>
-                                    <span className="text-sm font-bold text-gray-600">{chef.isOpen ? 'المطبخ مفتوح' : 'المطبخ مغلق'}</span>
-                                 </div>
-                                 <button 
-                                    onClick={() => toggleChefStatus(chef.id)}
-                                    className={`px-4 py-2 rounded-lg text-sm font-bold text-white transition-colors ${chef.isOpen ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'}`}
-                                 >
-                                     {chef.isOpen ? 'إغلاق المطبخ' : 'فتح المطبخ'}
-                                 </button>
+                                <div className="text-sm text-gray-500 mb-4 space-y-1">
+                                    <div className="flex items-center gap-2"><i className="fa-regular fa-clock"></i> {chef.workingHours}</div>
+                                    <div className="flex items-center gap-2"><i className="fa-solid fa-truck-fast"></i> توصيل خلال {chef.deliveryTime}</div>
+                                </div>
+
+                                <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+                                     <div className="flex items-center gap-2">
+                                        <span className={`w-3 h-3 rounded-full ${chef.isOpen ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></span>
+                                        <span className="text-sm font-bold text-gray-600">{chef.isOpen ? 'المطبخ مفتوح' : 'المطبخ مغلق'}</span>
+                                     </div>
+                                     <button 
+                                        onClick={() => toggleChefStatus(chef.id)}
+                                        className={`px-4 py-2 rounded-lg text-sm font-bold text-white transition-colors ${chef.isOpen ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'}`}
+                                     >
+                                         {chef.isOpen ? 'إغلاق المطبخ' : 'فتح المطبخ'}
+                                     </button>
+                                </div>
                             </div>
                         </div>
                     );
