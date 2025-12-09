@@ -9,7 +9,7 @@ import { Footer } from './components/Footer';
 import { Hero } from './components/Hero';
 import { Features } from './components/Features';
 import { CartDrawer } from './components/CartDrawer';
-import { AuthModal, MenuModal, ChefConflictModal, OrderSuccessModal, ClearCartModal } from './components/Modals';
+import { AuthModal, MenuModal, ChefConflictModal, OrderSuccessModal, ClearCartModal, ReviewModal } from './components/Modals';
 import { LoadingScreen } from './components/UIHelpers';
 import { WeeklyOffers } from './components/home/WeeklyOffers';
 import { ChefsSection } from './components/home/ChefsSection';
@@ -17,6 +17,7 @@ import { BestSellers } from './components/home/BestSellers';
 import { BoxesSection } from './components/home/BoxesSection';
 import { FullMenu } from './components/home/FullMenu';
 import { Categories } from './components/home/Categories';
+import { LiveOrderTracker } from './components/home/LiveOrderTracker';
 
 // Pages
 import { ChefDetailsPage } from './pages/ChefDetailsPage';
@@ -68,8 +69,15 @@ const App = () => {
     const [orderSuccess, setOrderSuccess] = useState<{ isOpen: boolean; orderId: number | null }>({ isOpen: false, orderId: null });
     const [conflictModal, setConflictModal] = useState<{ isOpen: boolean; item: MenuItem | null; newQuantity: number }>({ isOpen: false, item: null, newQuantity: 0 });
     const [isClearCartModalOpen, setIsClearCartModalOpen] = useState(false);
+    
+    // Review State
+    const [reviewModalOpen, setReviewModalOpen] = useState(false);
+    const [reviewItem, setReviewItem] = useState<MenuItem | null>(null);
 
     const currentChefName = cart.length > 0 ? cart[0].chef : null;
+
+    // Find the most recent active order (not delivered) for the Live Tracker
+    const activeOrder = orders.find(o => o.status !== 'delivered');
 
     // Fetch Data on Mount
     useEffect(() => {
@@ -86,15 +94,12 @@ const App = () => {
                     api.getContactSettings()
                 ]);
 
-                // Only update if fetch returned data, otherwise stick to INITIAL constants
                 if (chefsData.length) setChefs(chefsData);
                 if (menuData.length) setMenuItems(menuData);
                 if (offersData.length) setOffers(offersData);
                 if (boxesData.length) setBoxes(boxesData);
                 if (bestSellersData.length) setBestSellers(bestSellersData);
                 if (promosData.length) setPromoCodes(promosData);
-                
-                // Orders start empty usually, but if fetched, set them
                 if (ordersData) setOrders(ordersData);
                 if (settingsData) setContactSettings(settingsData);
                 
@@ -163,12 +168,10 @@ const App = () => {
 
     // --- Admin Handlers (Using API Service) ---
     const updateOrderStatus = (id: number, status: string) => {
-        // Optimistic update
         setOrders(prev => prev.map(o => o.id === id ? {...o, status} : o));
         api.updateOrderStatus(id, status);
     };
     
-    // Explicit Delete Handlers with window.confirm
     const handleDeleteOrder = (id: number) => {
         if(window.confirm('هل أنت متأكد من حذف هذا الطلب؟')) {
             setOrders(prev => prev.filter(o => o.id !== id));
@@ -215,10 +218,8 @@ const App = () => {
     }
     
     const handleDeleteMeal = (id: number) => { 
-        if(window.confirm('هل أنت متأكد من حذف هذه الوجبة؟')) {
-            setMenuItems(prev => prev.filter(m => m.id !== id)); 
-            api.deleteMenuItem(id);
-        }
+        setMenuItems(prev => prev.filter(m => m.id !== id)); 
+        api.deleteMenuItem(id);
     }
     
     const handleAddOffer = (newOffer: MenuItem) => {
@@ -269,7 +270,6 @@ const App = () => {
         }
     }
     
-    // Promo Handlers
     const handleAddPromo = (newPromo: PromoCode) => {
         setPromoCodes([...promoCodes, newPromo]);
         api.addPromoCode(newPromo);
@@ -286,8 +286,36 @@ const App = () => {
         api.updateContactSettings(newSettings);
     };
 
+    // Review Handler
+    const handleOpenReview = (item: MenuItem) => {
+        setReviewItem(item);
+        setReviewModalOpen(true);
+    };
+
+    const handleSubmitReview = (rating: number, comment: string) => {
+        if (reviewItem) {
+            const review = {
+                id: Date.now(),
+                itemId: reviewItem.id,
+                rating,
+                comment,
+                date: new Date().toLocaleDateString('ar-EG'),
+                customerName: 'عميل غدوة' // In a real app, use logged-in user name
+            };
+            
+            // Update Menu Items state with new review logic (simplified)
+            // Ideally we re-fetch or optimistically update specific item
+            // For now we assume API call handles the backend
+            api.addReview(review).then(() => {
+                alert('شكراً لتقييمك! رأيك يهمنا ❤️');
+                // Optional: Refresh menu items to show updated rating
+                api.getMenuItems().then(setMenuItems);
+            });
+        }
+        setReviewModalOpen(false);
+    };
+
     const handlePlaceOrder = (formData: CheckoutForm) => {
-        // Total includes food subtotal - discount. Delivery is excluded and determined later.
         const totalBeforeDiscount = cart.reduce((sum, i) => sum + (i.price * i.quantity), 0);
         const discountAmount = formData.discountApplied || 0;
         const finalTotal = totalBeforeDiscount - discountAmount;
@@ -304,15 +332,12 @@ const App = () => {
             itemsDetails: cart.map(i => ({...i}))
         };
         
-        // Update Local State for UI
         setOrders([newOrder, ...orders]);
         
-        // Simulate sending to backend (Company)
         api.submitOrder(newOrder).then(success => {
             if(success) console.log("Order submitted successfully");
         });
         
-        // Clear Cart and Show Success Modal immediately
         setCart([]);
         setOrderSuccess({ isOpen: true, orderId: newOrder.id });
     };
@@ -361,12 +386,27 @@ const App = () => {
                 onClose={() => setIsClearCartModalOpen(false)}
                 onConfirm={handleClearCart}
             />
+            
+            <ReviewModal 
+                isOpen={reviewModalOpen}
+                onClose={() => setReviewModalOpen(false)}
+                onSubmit={handleSubmitReview}
+                itemName={reviewItem?.name || ''}
+            />
 
             {isAdmin && activePage.startsWith('admin') ? (
                 <div className="flex bg-gray-50 min-h-screen">
                     <AdminSidebar activePage={activePage} onNavigate={setActivePage} onLogout={handleLogout} />
                     <div className="flex-1 md:mr-64 p-8">
-                         {activePage === 'admin-dashboard' && <AdminDashboard orders={orders} chefs={chefs} mealsCount={menuItems.length} visitorsCount={visitors} />}
+                         {activePage === 'admin-dashboard' && (
+                            <AdminDashboard 
+                                orders={orders} 
+                                chefs={chefs} 
+                                mealsCount={menuItems.length} 
+                                offersCount={offers.length} 
+                                visitorsCount={visitors} 
+                            />
+                         )}
                          {activePage === 'admin-orders' && <AdminOrders orders={orders} updateOrderStatus={updateOrderStatus} onDeleteOrder={handleDeleteOrder} onViewOrder={handleViewOrder} />}
                          {activePage === 'admin-order-details' && <AdminOrderDetails order={selectedOrder} onBack={() => setActivePage('admin-orders')} updateOrderStatus={updateOrderStatus} />}
                          {activePage === 'admin-chefs' && <AdminChefs chefs={chefs} orders={orders} toggleChefStatus={toggleChefStatus} onAdd={handleAddChef} onEdit={handleEditChef} onDelete={handleDeleteChef} />}
@@ -397,12 +437,22 @@ const App = () => {
                     {activePage === 'home' && (
                         <main>
                             <Hero onNavigate={setActivePage} onOpenMenu={() => setIsMenuOpen(true)} onOpenAuth={() => setIsAuthOpen(true)} />
+                            
+                            {activeOrder && (
+                                <LiveOrderTracker 
+                                    order={activeOrder} 
+                                    onTrackClick={() => {
+                                        setTrackOrderId(activeOrder.id);
+                                        setActivePage('track-order');
+                                    }} 
+                                />
+                            )}
+
                             <Features />
                             <WeeklyOffers offers={offers} cart={cart} updateQuantity={updateQuantity} />
-                            <Categories onCategoryClick={(cat) => {
-                                const el = document.getElementById('menu');
-                                if(el) el.scrollIntoView({behavior: 'smooth'});
-                            }} />
+                            
+                            {/* Categories Removed */}
+
                             <ChefsSection onNavigate={setActivePage} onChefClick={(chef) => {
                                 setSelectedChef(chef);
                                 setActivePage('chef-details');
@@ -418,6 +468,7 @@ const App = () => {
                             orders={orders}
                             initialOrderId={trackOrderId}
                             onBack={() => setActivePage('home')}
+                            onRateItem={handleOpenReview}
                         />
                     )}
 

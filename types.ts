@@ -1,4 +1,13 @@
 
+export interface Review {
+    id: number;
+    itemId: number;
+    rating: number;
+    comment: string;
+    date: string;
+    customerName: string;
+}
+
 export interface Chef {
     id: number;
     name: string;
@@ -30,6 +39,7 @@ export interface MenuItem {
     discount?: string;
     chefImg?: string;
     orderCount?: number;
+    reviewsList?: Review[]; // New field for storing reviews
 }
 
 export interface CartItem extends MenuItem {
@@ -43,7 +53,7 @@ export interface Order {
     address: string;
     date: string;
     total: number;
-    status: string; // 'pending' | 'cooking' | 'delivered'
+    status: string; // 'pending' | 'cooking' | 'out_for_delivery' | 'delivered'
     items: string;
     itemsDetails: CartItem[];
 }

@@ -76,7 +76,12 @@ export const AdminMeals: React.FC<AdminMealsProps> = ({ meals, chefs, onAdd, onE
                                     <button onClick={() => openEdit(meal)} className="text-blue-500 bg-blue-50 p-2 rounded-lg hover:bg-blue-100 transition"><i className="fa-solid fa-pen"></i></button>
                                     <button 
                                         type="button"
-                                        onClick={(e) => { e.stopPropagation(); onDelete(meal.id); }} 
+                                        onClick={(e) => { 
+                                            e.stopPropagation(); 
+                                            if (window.confirm('هل أنت متأكد من حذف هذه الوجبة؟')) {
+                                                onDelete(meal.id);
+                                            }
+                                        }} 
                                         className="text-red-500 bg-red-50 p-2 rounded-lg hover:bg-red-100 transition"
                                     >
                                         <i className="fa-solid fa-trash"></i>

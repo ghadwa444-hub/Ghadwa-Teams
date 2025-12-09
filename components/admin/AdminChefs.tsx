@@ -87,6 +87,12 @@ export const AdminChefs: React.FC<AdminChefsProps> = ({ chefs, orders, toggleChe
                                     {chef.isOpen ? 'مفتوح' : 'مغلق'}
                                 </div>
 
+                                {/* Delivery Time Badge */}
+                                <div className="absolute bottom-2 right-2 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-lg text-[10px] font-bold text-gray-800 flex items-center gap-1 shadow-sm">
+                                    <i className="fa-solid fa-motorcycle text-[#8B2525]"></i>
+                                    {chef.deliveryTime}
+                                </div>
+
                                 {/* Action Buttons - Always Visible on Mobile, Hover on Desktop */}
                                 <div className="absolute top-4 right-4 flex gap-2">
                                     <button 
@@ -138,7 +144,6 @@ export const AdminChefs: React.FC<AdminChefsProps> = ({ chefs, orders, toggleChe
 
                                 <div className="flex items-center justify-between text-xs text-gray-500 pt-4 border-t border-gray-100 mb-4">
                                     <div className="flex items-center gap-1"><i className="fa-regular fa-clock text-gray-400"></i> {chef.workingHours}</div>
-                                    <div className="flex items-center gap-1"><i className="fa-solid fa-truck-fast text-gray-400"></i> {chef.deliveryTime}</div>
                                 </div>
 
                                 <button 

@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import { MENU_CATEGORIES } from '../constants';
+import { MenuItem } from '../types';
 
 // --- Auth Modal ---
 interface AuthModalProps {
@@ -18,7 +19,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLogin }
         e.preventDefault();
         setError('');
 
-        if (email === 'admin@ghadwa.com' && password === 'admin123') {
+        if (email.trim().toLowerCase() === 'admin@ghadwa.com' && password.trim() === 'admin123') {
             onLogin('admin');
             onClose();
         } else {
@@ -139,6 +140,77 @@ export const MenuModal: React.FC<MenuModalProps> = ({ isOpen, onClose }) => {
                         </div>
                         <i className="fa-solid fa-download text-gray-400 group-hover:text-[#8B2525]"></i>
                     </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// --- Review Modal ---
+interface ReviewModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    onSubmit: (rating: number, comment: string) => void;
+    itemName: string;
+}
+
+export const ReviewModal: React.FC<ReviewModalProps> = ({ isOpen, onClose, onSubmit, itemName }) => {
+    const [rating, setRating] = useState(5);
+    const [comment, setComment] = useState('');
+
+    if (!isOpen) return null;
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        onSubmit(rating, comment);
+        setComment('');
+        setRating(5);
+        onClose();
+    };
+
+    return (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose}></div>
+            <div className="bg-white w-full max-w-md rounded-2xl overflow-hidden relative z-10 shadow-2xl animate-fade-in">
+                <button onClick={onClose} className="absolute top-4 left-4 z-20 w-8 h-8 bg-gray-100 text-gray-500 rounded-full flex items-center justify-center hover:bg-gray-200 transition">
+                    <i className="fa-solid fa-xmark"></i>
+                </button>
+
+                <div className="p-8">
+                    <h3 className="text-xl font-bold text-gray-900 mb-2 text-center">قيم وجبتك 🍲</h3>
+                    <p className="text-gray-500 text-sm text-center mb-6">رأيك في "{itemName}" يهمنا!</p>
+
+                    <form onSubmit={handleSubmit} className="space-y-6">
+                        <div className="flex justify-center gap-2 mb-4">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                                <button
+                                    key={star}
+                                    type="button"
+                                    onClick={() => setRating(star)}
+                                    className={`text-4xl transition-colors ${rating >= star ? 'text-yellow-400' : 'text-gray-200'}`}
+                                >
+                                    ★
+                                </button>
+                            ))}
+                        </div>
+
+                        <div>
+                            <textarea
+                                className="w-full bg-gray-50 border border-gray-200 rounded-xl p-4 focus:outline-none focus:border-[#8B2525] transition resize-none h-32"
+                                placeholder="اكتب تعليقك هنا..."
+                                value={comment}
+                                onChange={(e) => setComment(e.target.value)}
+                                required
+                            ></textarea>
+                        </div>
+
+                        <button
+                            type="submit"
+                            className="w-full bg-[#8B2525] text-white py-3.5 rounded-xl font-bold hover:bg-[#6b1c1c] transition-colors shadow-lg"
+                        >
+                            إرسال التقييم
+                        </button>
+                    </form>
                 </div>
             </div>
         </div>
