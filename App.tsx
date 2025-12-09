@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Chef, Order, MenuItem, Box, CartItem, CheckoutForm, PromoCode, ContactSettings } from './types';
 import { INITIAL_CHEFS, INITIAL_ORDERS, INITIAL_MENU_ITEMS, INITIAL_OFFERS, INITIAL_BOXES, INITIAL_BEST_SELLERS, INITIAL_PROMO_CODES, INITIAL_CONTACT_SETTINGS } from './constants';
 import { api } from './services/api';
+import { logger } from './utils/logger';
 
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
@@ -37,10 +38,29 @@ import { AdminBoxes } from './components/admin/AdminBoxes';
 import { AdminBestSellers } from './components/admin/AdminBestSellers';
 import { AdminPromoCodes } from './components/admin/AdminPromoCodes';
 import { AdminContactSettings } from './components/admin/AdminContactSettings';
+import { DebugConsole } from './components/DebugConsole';
 
 const App = () => {
     const [activePage, setActivePage] = useState('home');
     const [isLoading, setIsLoading] = useState(true);
+    
+    // Log component mount
+    useEffect(() => {
+        logger.info('APP', '🎯 App component mounted');
+        return () => {
+            logger.debug('APP', '🔴 App component unmounting');
+        };
+    }, []);
+
+    // Log page navigation changes
+    useEffect(() => {
+        logger.info('NAVIGATION', `📍 Page changed to: ${activePage}`, { 
+            page: activePage,
+            isAdmin: isAdmin,
+            isLoggedIn: isLoggedIn,
+            cartSize: cart.length
+        });
+    }, [activePage, isAdmin, isLoggedIn, cart.length]);
     
     // Data State
     const [chefs, setChefs] = useState<Chef[]>(INITIAL_CHEFS);
@@ -81,7 +101,11 @@ const App = () => {
     // Fetch Data on Mount
     useEffect(() => {
         const loadData = async () => {
+            logger.info('APP', '📥 Starting data loading...');
             try {
+                logger.debug('APP', '🔄 Fetching all data from API...');
+                
+                const startTime = performance.now();
                 const [chefsData, ordersData, menuData, offersData, boxesData, bestSellersData, promosData, settingsData] = await Promise.all([
                     api.getChefs(),
                     api.getOrders(),
@@ -92,20 +116,57 @@ const App = () => {
                     api.getPromoCodes(),
                     api.getContactSettings()
                 ]);
+                const loadTime = performance.now() - startTime;
 
-                if (chefsData.length) setChefs(chefsData);
-                if (menuData.length) setMenuItems(menuData);
-                if (offersData.length) setOffers(offersData);
-                if (boxesData.length) setBoxes(boxesData);
-                if (bestSellersData.length) setBestSellers(bestSellersData);
-                if (promosData.length) setPromoCodes(promosData);
-                if (ordersData) setOrders(ordersData);
-                if (settingsData) setContactSettings(settingsData);
+                logger.info('APP', `✅ API data fetched in ${loadTime.toFixed(2)}ms`, {
+                    chefsCount: chefsData.length,
+                    ordersCount: ordersData.length,
+                    menuItemsCount: menuData.length,
+                    offersCount: offersData.length,
+                    boxesCount: boxesData.length,
+                    bestSellersCount: bestSellersData.length,
+                    promosCount: promosData.length
+                });
+
+                if (chefsData.length) {
+                    setChefs(chefsData);
+                    logger.debug('APP', `✅ Loaded ${chefsData.length} chefs`);
+                }
+                if (menuData.length) {
+                    setMenuItems(menuData);
+                    logger.debug('APP', `✅ Loaded ${menuData.length} menu items`);
+                }
+                if (offersData.length) {
+                    setOffers(offersData);
+                    logger.debug('APP', `✅ Loaded ${offersData.length} offers`);
+                }
+                if (boxesData.length) {
+                    setBoxes(boxesData);
+                    logger.debug('APP', `✅ Loaded ${boxesData.length} boxes`);
+                }
+                if (bestSellersData.length) {
+                    setBestSellers(bestSellersData);
+                    logger.debug('APP', `✅ Loaded ${bestSellersData.length} best sellers`);
+                }
+                if (promosData.length) {
+                    setPromoCodes(promosData);
+                    logger.debug('APP', `✅ Loaded ${promosData.length} promo codes`);
+                }
+                if (ordersData) {
+                    setOrders(ordersData);
+                    logger.debug('APP', `✅ Loaded ${ordersData.length} orders`);
+                }
+                if (settingsData) {
+                    setContactSettings(settingsData);
+                    logger.debug('APP', '✅ Loaded contact settings');
+                }
                 
+                logger.info('APP', '🎉 All data loaded successfully');
             } catch (error) {
-                console.error("Error loading data:", error);
+                logger.error('APP', '❌ Error loading data', error);
             } finally {
                 setIsLoading(false);
+                logger.info('APP', '⏳ Loading complete, rendering UI');
             }
         };
 
@@ -115,18 +176,31 @@ const App = () => {
     const updateQuantity = (id: number, newQty: number, itemToAdd?: MenuItem) => {
         if (newQty < 0) return;
 
+        logger.debug('CART', '🛒 Update quantity requested', { itemId: id, newQuantity: newQty, itemName: itemToAdd?.name });
+
         if (itemToAdd && cart.length > 0 && itemToAdd.chef && currentChefName && itemToAdd.chef !== currentChefName) {
+            logger.warn('CART', '⚠️ Chef conflict detected', { 
+                currentChef: currentChefName, 
+                newChef: itemToAdd.chef,
+                currentItem: itemToAdd.name
+            });
             setConflictModal({ isOpen: true, item: itemToAdd, newQuantity: 1 });
             return;
         }
 
         if (newQty === 0) {
-            setCart(prev => prev.filter(item => item.id !== id));
+            setCart(prev => {
+                const updated = prev.filter(item => item.id !== id);
+                logger.info('CART', '🗑️ Item removed from cart', { itemId: id, cartSize: updated.length });
+                return updated;
+            });
         } else {
             setCart(prev => {
                 const exists = prev.find(item => item.id === id);
                 if (exists) {
-                    return prev.map(item => item.id === id ? { ...item, quantity: newQty } : item);
+                    const updated = prev.map(item => item.id === id ? { ...item, quantity: newQty } : item);
+                    logger.info('CART', '✏️ Item quantity updated', { itemId: id, quantity: newQty });
+                    return updated;
                 } else if (itemToAdd) {
                     return [...prev, { ...itemToAdd, quantity: newQty }];
                 }
@@ -138,21 +212,29 @@ const App = () => {
     const handleClearCartAndAdd = () => {
         const { item, newQuantity } = conflictModal;
         if (item) {
-             setCart([{ ...item, quantity: newQuantity }]);
+            logger.info('CART', '🔄 Clearing cart and adding new item from different chef', { 
+                chefName: item.chef,
+                itemName: item.name,
+                quantity: newQuantity
+            });
+            setCart([{ ...item, quantity: newQuantity }]);
         }
         setConflictModal({ isOpen: false, item: null, newQuantity: 0 });
     };
 
     const handleClearCart = () => {
+        logger.info('CART', '🗑️ Clearing entire cart');
         setCart([]);
         setIsClearCartModalOpen(false);
     };
 
     const handleLogin = (type: string) => {
+        logger.info('AUTH', `🔓 User logged in as ${type}`, { loginType: type });
         setIsLoggedIn(true);
         if (type === 'admin') {
             setIsAdmin(true);
             setActivePage('admin-dashboard');
+            logger.warn('AUTH', '⚠️ Admin mode activated');
         } else {
             setIsAdmin(false);
             setActivePage('home');
@@ -160,6 +242,7 @@ const App = () => {
     };
 
     const handleLogout = () => {
+        logger.info('AUTH', '🔐 User logged out');
         setIsLoggedIn(false);
         setIsAdmin(false);
         setActivePage('home');
@@ -167,12 +250,14 @@ const App = () => {
 
     // --- Admin Handlers (Using API Service) ---
     const updateOrderStatus = (id: number, status: string) => {
+        logger.info('ADMIN_ORDERS', `📊 Order status updated`, { orderId: id, newStatus: status });
         setOrders(prev => prev.map(o => o.id === id ? {...o, status} : o));
         api.updateOrderStatus(id, status);
     };
     
     const handleDeleteOrder = (id: number) => {
         if(window.confirm('هل أنت متأكد من حذف هذا الطلب؟')) {
+            logger.warn('ADMIN_ORDERS', '🗑️ Order deleted', { orderId: id });
             setOrders(prev => prev.filter(o => o.id !== id));
             api.deleteOrder(id);
             if (activePage === 'admin-order-details' && selectedOrder?.id === id) {
@@ -182,95 +267,117 @@ const App = () => {
     }
     
     const handleViewOrder = (order: Order) => {
+        logger.debug('ADMIN_ORDERS', '👁️ Viewing order details', { orderId: order.id, chefName: order.chefName });
         setSelectedOrder(order);
         setActivePage('admin-order-details');
     }
     const toggleChefStatus = (id: number) => {
         const updatedChefs = chefs.map(c => c.id === id ? {...c, isOpen: !c.isOpen} : c);
-        setChefs(updatedChefs);
         const chef = updatedChefs.find(c => c.id === id);
+        logger.info('ADMIN_CHEFS', `🔄 Chef status toggled`, { chefId: id, chefName: chef?.name, isNowOpen: chef?.isOpen });
+        setChefs(updatedChefs);
         if (chef) api.updateChef(chef);
     };
     const handleAddChef = (newChef: Chef) => {
+        logger.info('ADMIN_CHEFS', '➕ New chef added', { chefName: newChef.name, specialty: newChef.specialty });
         setChefs([...chefs, newChef]);
         api.addChef(newChef);
     }
     const handleEditChef = (updatedChef: Chef) => {
+        logger.info('ADMIN_CHEFS', '✏️ Chef updated', { chefId: updatedChef.id, chefName: updatedChef.name });
         setChefs(prev => prev.map(c => c.id === updatedChef.id ? updatedChef : c));
         api.updateChef(updatedChef);
     }
     
     const handleDeleteChef = (id: number) => { 
         if(window.confirm('هل أنت متأكد من حذف هذا الشيف؟')) {
+            const chef = chefs.find(c => c.id === id);
+            logger.warn('ADMIN_CHEFS', '🗑️ Chef deleted', { chefId: id, chefName: chef?.name });
             setChefs(prev => prev.filter(c => c.id !== id)); 
             api.deleteChef(id);
         }
     }
     
     const handleAddMeal = (newMeal: MenuItem) => {
+        logger.info('ADMIN_MEALS', '➕ New meal added', { mealName: newMeal.name, price: newMeal.price });
         setMenuItems([...menuItems, newMeal]);
         api.addMenuItem(newMeal);
     }
     const handleEditMeal = (updatedMeal: MenuItem) => {
+        logger.info('ADMIN_MEALS', '✏️ Meal updated', { mealId: updatedMeal.id, mealName: updatedMeal.name });
         setMenuItems(prev => prev.map(m => m.id === updatedMeal.id ? updatedMeal : m));
         api.updateMenuItem(updatedMeal);
     }
     
     const handleDeleteMeal = (id: number) => { 
-        // Confirmation is handled in AdminMeals
+        const meal = menuItems.find(m => m.id === id);
+        logger.warn('ADMIN_MEALS', '🗑️ Meal deleted', { mealId: id, mealName: meal?.name });
         setMenuItems(prev => prev.filter(m => m.id !== id)); 
         api.deleteMenuItem(id);
     }
     
     const handleAddOffer = (newOffer: MenuItem) => {
+        logger.info('ADMIN_OFFERS', '➕ New offer added', { offerName: newOffer.name, discount: newOffer.discount });
         setOffers([...offers, newOffer]);
         api.addOffer(newOffer);
     }
     const handleEditOffer = (updatedOffer: MenuItem) => {
+        logger.info('ADMIN_OFFERS', '✏️ Offer updated', { offerId: updatedOffer.id, offerName: updatedOffer.name });
         setOffers(prev => prev.map(o => o.id === updatedOffer.id ? updatedOffer : o));
         api.updateOffer(updatedOffer);
     }
     
     const handleDeleteOffer = (id: number) => { 
         if(window.confirm('هل أنت متأكد من حذف هذا العرض؟')) {
+            const offer = offers.find(o => o.id === id);
+            logger.warn('ADMIN_OFFERS', '🗑️ Offer deleted', { offerId: id, offerName: offer?.name });
             setOffers(prev => prev.filter(o => o.id !== id)); 
             api.deleteOffer(id);
         }
     }
     
     const handleAddBox = (newBox: Box) => {
+        logger.info('ADMIN_BOXES', '➕ New box added', { boxName: newBox.name, itemCount: newBox.items?.length || 0 });
         setBoxes([...boxes, newBox]);
         api.addBox(newBox);
     }
     const handleEditBox = (updatedBox: Box) => {
+        logger.info('ADMIN_BOXES', '✏️ Box updated', { boxId: updatedBox.id, boxName: updatedBox.name });
         setBoxes(prev => prev.map(b => b.id === updatedBox.id ? updatedBox : b));
         api.updateBox(updatedBox);
     }
     
     const handleDeleteBox = (id: number) => { 
         if(window.confirm('هل أنت متأكد من حذف هذا البوكس؟')) {
+            const box = boxes.find(b => b.id === id);
+            logger.warn('ADMIN_BOXES', '🗑️ Box deleted', { boxId: id, boxName: box?.name });
             setBoxes(prev => prev.filter(b => b.id !== id)); 
             api.deleteBox(id);
         }
     }
     
     const handleAddBestSeller = (newItem: MenuItem) => {
+        logger.info('ADMIN_BESTSELLERS', '➕ Best seller added', { itemName: newItem.name });
         setBestSellers([...bestSellers, newItem]);
         api.addBestSeller(newItem);
     }
     const handleEditBestSeller = (updatedItem: MenuItem) => {
+        logger.info('ADMIN_BESTSELLERS', '✏️ Best seller updated', { itemId: updatedItem.id, itemName: updatedItem.name });
         setBestSellers(prev => prev.map(i => i.id === updatedItem.id ? updatedItem : i));
         api.updateBestSeller(updatedItem);
     }
     
     const handleDeleteBestSeller = (id: number) => { 
         if(window.confirm('هل أنت متأكد من حذف الوجبة من الأكثر مبيعاً؟')) {
+            const item = bestSellers.find(i => i.id === id);
+            logger.warn('ADMIN_BESTSELLERS', '🗑️ Best seller deleted', { itemId: id, itemName: item?.name });
             setBestSellers(prev => prev.filter(i => i.id !== id)); 
             api.deleteBestSeller(id);
         }
     }
     
     const handleAddPromo = (newPromo: PromoCode) => {
+        logger.info('ADMIN_PROMOS', '➕ New promo code added', { code: newPromo.code, discount: newPromo.discount });
         setPromoCodes([...promoCodes, newPromo]);
         api.addPromoCode(newPromo);
     }
@@ -316,9 +423,21 @@ const App = () => {
     };
 
     const handlePlaceOrder = (formData: CheckoutForm) => {
+        logger.info('ORDER', '📦 New order being placed', { 
+            customerName: formData.name,
+            itemCount: cart.length,
+            totalItems: cart.reduce((sum, i) => sum + i.quantity, 0)
+        });
+
         const totalBeforeDiscount = cart.reduce((sum, i) => sum + (i.price * i.quantity), 0);
         const discountAmount = formData.discountApplied || 0;
         const finalTotal = totalBeforeDiscount - discountAmount;
+
+        logger.debug('ORDER', '💰 Order pricing', {
+            subtotal: totalBeforeDiscount,
+            discount: discountAmount,
+            finalTotal: finalTotal
+        });
 
         const newOrder: Order = {
             id: Math.floor(Math.random() * 10000),
@@ -332,22 +451,33 @@ const App = () => {
             itemsDetails: cart.map(i => ({...i}))
         };
         
+        logger.info('ORDER', '✅ Order created with ID', { orderId: newOrder.id });
+        
         setOrders([newOrder, ...orders]);
         
         api.submitOrder(newOrder).then(success => {
-            if(success) console.log("Order submitted successfully");
+            if(success) {
+                logger.info('ORDER', '🎉 Order submitted successfully to API', { orderId: newOrder.id });
+            } else {
+                logger.warn('ORDER', '⚠️ Order submission failed', { orderId: newOrder.id });
+            }
         });
         
         setCart([]);
         setOrderSuccess({ isOpen: true, orderId: newOrder.id });
+        logger.info('ORDER', '🛒 Cart cleared after order placement');
     };
 
     if (isLoading) {
+        logger.debug('APP', '⏳ App still loading, showing loading screen');
         return <LoadingScreen />;
     }
 
+    logger.info('APP', '🎨 Rendering application UI');
+
     return (
         <div className="min-h-screen bg-white text-gray-900 font-sans">
+            <DebugConsole />
             <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} onLogin={handleLogin} />
             <MenuModal isOpen={isMenuOpen} onClose={() => setIsMenuOpen(false)} />
             <CartDrawer 
