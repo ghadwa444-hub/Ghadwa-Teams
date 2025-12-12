@@ -79,10 +79,11 @@ export const AdminStatsCard: React.FC<AdminStatsCardProps> = ({ title, value, ic
 
 export const LoadingScreen = () => (
     <div className="fixed inset-0 bg-white z-[100] flex flex-col items-center justify-center animate-fade-in">
-        <div className="w-20 h-20 bg-[#8B2525] rounded-full flex items-center justify-center text-white font-bold text-4xl mb-4 shadow-xl animate-bounce">
+        <div className="w-24 h-24 bg-gradient-to-br from-[#8B2525] to-[#6b1c1c] rounded-full flex items-center justify-center text-white font-bold text-5xl mb-6 shadow-2xl animate-bounce">
             غ
         </div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">غدوة</h2>
+        <h2 className="text-3xl font-bold text-gray-900 mb-3">غدوة</h2>
+        <p className="text-gray-600 font-semibold mb-2">أكل بيتي يوصلك لحد بابك</p>
         <p className="text-gray-500 animate-pulse">جاري تحضير السفرة...</p>
     </div>
 );

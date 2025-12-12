@@ -1,4 +1,4 @@
-I wimport React from 'react';
+import React from 'react';
 import { Chef } from '../../types';
 
 interface ChefCardProps {

@@ -57,11 +57,13 @@ export const Hero: React.FC<HeroProps> = ({ onNavigate, onOpenMenu, onOpenAuth }
           <div className="relative lg:h-[600px] flex items-center justify-center animate-float">
             <div className="relative w-full max-w-lg aspect-square">
               <div className="absolute inset-0 bg-[#8B2525] rounded-full opacity-5 blur-3xl transform rotate-12"></div>
-              <img
-                src="https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=1000&auto=format&fit=crop"
-                alt="Delicious Food"
-                className="w-full h-full object-cover rounded-full shadow-2xl border-8 border-white relative z-10"
-              />
+              <div className="w-full h-full rounded-full shadow-2xl border-8 border-white relative z-10 flex items-center justify-center bg-gradient-to-br from-[#8B2525] to-[#6b1c1c]">
+                <div className="text-center">
+                  <div className="text-9xl font-bold text-white mb-4 animate-pulse">غ</div>
+                  <p className="text-white text-2xl font-bold">غدوة</p>
+                  <p className="text-white/80 text-lg mt-2">أكل بيتي</p>
+                </div>
+              </div>
 
               <div className="absolute -left-8 top-20 bg-white p-4 rounded-2xl shadow-xl z-20 flex items-center gap-3 animate-bounce-slow">
                 <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center text-2xl">🥬</div>
