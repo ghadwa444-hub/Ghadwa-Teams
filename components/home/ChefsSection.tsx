@@ -1,6 +1,7 @@
 
-import React from 'react';
-import { Chef } from '../../types';
+import React from 'react'
+import { Chef } from '../../types'
+import { SectionTitle } from './SectionTitle'
 
 interface ChefsSectionProps {
     onNavigate: (page: string) => void;
@@ -10,13 +11,13 @@ interface ChefsSectionProps {
 
 export const ChefsSection: React.FC<ChefsSectionProps> = ({ onNavigate, onChefClick, chefs }) => {
     return (
-    <section className="py-24 bg-white" id="chefs">
-        <div className="max-w-7xl mx-auto px-4">
-            <div className="text-center mb-16">
-                <span className="text-[#8B2525] font-bold tracking-wider uppercase text-sm bg-red-50 px-3 py-1 rounded-full">شيفات غدوة</span>
-                <h2 className="text-4xl font-bold text-gray-900 mt-4 mb-3">أبطال المطبخ 👩‍🍳</h2>
-                <p className="text-gray-500 max-w-2xl mx-auto">تعرف على أمهر الشيفات اللي بيطبخولك بحب، واختار الشيف اللي يعجبك.</p>
-            </div>
+    <section className="py-12 sm:py-16 md:py-20 lg:py-24 bg-white" id="chefs">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <SectionTitle
+              label="شيفات غدوة"
+              title="أبطال المطبخ 👩‍🍳"
+              description="تعرف على أمهر الشيفات اللي بيطبخولك بحب، واختار الشيف اللي يعجبك."
+            />
 
             {chefs.length === 0 ? (
                 <div className="text-center py-12 border-2 border-dashed border-gray-200 rounded-[2rem] bg-gray-50">

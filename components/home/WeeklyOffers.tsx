@@ -1,8 +1,9 @@
 
-import React, { useState, useEffect } from 'react';
-import { MenuItem, CartItem } from '../../types';
-import { AddToCartButton } from '../UIHelpers';
-import { INITIAL_CHEFS } from '../../constants';
+import React, { useState, useEffect } from 'react'
+import { MenuItem, CartItem } from '../../types'
+import { AddToCartButton } from '../UIHelpers'
+import { SectionTitle } from './SectionTitle'
+import { INITIAL_CHEFS } from '../../constants'
 
 interface WeeklyOffersProps {
     offers: MenuItem[];
@@ -78,14 +79,14 @@ export const WeeklyOffers: React.FC<WeeklyOffersProps> = ({ offers, cart, update
     };
 
     return (
-        <section id="weekly-offers" className="py-20 bg-[#f9fafb] relative overflow-hidden">
+        <section id="weekly-offers" className="py-12 sm:py-16 md:py-20 lg:py-24 bg-[#f9fafb] relative overflow-hidden">
             <div className="absolute inset-0 pattern-dots opacity-10 text-gray-300 pointer-events-none"></div>
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-                <div className="text-center mb-16">
-                    <span className="text-[#8B2525] font-bold tracking-wider uppercase text-sm bg-red-100 px-4 py-1.5 rounded-full">حصرياً</span>
-                    <h2 className="text-4xl font-bold text-gray-900 mt-4 mb-3">عروض الأسبوع النارية 🔥</h2>
-                    <p className="text-gray-500">أقوى التوفير على أحلى الأكلات البيتي</p>
-                </div>
+                <SectionTitle
+                  label="حصرياً"
+                  title="عروض الأسبوع النارية 🔥"
+                  description="أقوى التوفير على أحلى الأكلات البيتي"
+                />
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                     {offers.map(offer => {
                          const chefObj = INITIAL_CHEFS.find(c => c.name === offer.chef);

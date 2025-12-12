@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
-import { MenuItem, CartItem } from '../../types';
-import { AddToCartButton } from '../UIHelpers';
-import { MENU_CATEGORIES, INITIAL_CHEFS } from '../../constants';
+import React, { useState } from 'react'
+import { MenuItem, CartItem } from '../../types'
+import { AddToCartButton } from '../UIHelpers'
+import { SectionTitle } from './SectionTitle'
+import { MENU_CATEGORIES, INITIAL_CHEFS } from '../../constants'
 
 interface FullMenuProps {
     menuItems: MenuItem[];
@@ -17,29 +18,28 @@ export const FullMenu: React.FC<FullMenuProps> = ({ menuItems, cart, updateQuant
         : menuItems.filter(item => item.category === activeCategory);
 
     return (
-        <section id="menu" className="py-20 bg-white">
+        <section id="menu" className="py-12 sm:py-16 md:py-20 lg:py-24 bg-white">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="flex flex-col md:flex-row justify-between items-end mb-10 gap-6">
-                    <div>
-                        <h2 className="text-4xl font-bold text-gray-900 mb-3">المنيو الكامل 🥘</h2>
-                        <p className="text-gray-500">اختار اللي نفسك فيه من كل الأصناف</p>
-                    </div>
-                    
-                    <div className="flex overflow-x-auto pb-2 hide-scrollbar gap-2 w-full md:w-auto">
-                        {MENU_CATEGORIES.map((cat) => (
-                            <button
-                                key={cat}
-                                onClick={() => setActiveCategory(cat)}
-                                className={`px-5 py-2.5 rounded-full font-bold text-sm whitespace-nowrap transition-all ${
-                                    activeCategory === cat 
-                                    ? 'bg-[#8B2525] text-white shadow-lg shadow-red-900/20' 
-                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                                }`}
-                            >
-                                {cat}
-                            </button>
+                <SectionTitle
+                  title="المنيو الكامل 🥘"
+                  description="اختار اللي نفسك فيه من كل الأصناف"
+                  showBadge={false}
+                />
+
+                <div className="flex overflow-x-auto pb-2 hide-scrollbar gap-2 mb-8 sm:mb-10">
+                    {MENU_CATEGORIES.map((cat) => (
+                        <button
+                            key={cat}
+                            onClick={() => setActiveCategory(cat)}
+                            className={`px-5 py-2.5 rounded-full font-bold text-sm whitespace-nowrap transition-all ${
+                                activeCategory === cat 
+                                ? 'bg-[#8B2525] text-white shadow-lg shadow-red-900/20' 
+                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                            }`}
+                        >
+                            {cat}
+                        </button>
                         ))}
-                    </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

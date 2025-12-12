@@ -1,6 +1,7 @@
-import React from 'react';
-import { MenuItem, CartItem, Chef } from '../../types';
-import { AddToCartButton } from '../UIHelpers';
+import React from 'react'
+import { MenuItem, CartItem, Chef } from '../../types'
+import { AddToCartButton } from '../UIHelpers'
+import { SectionTitle } from './SectionTitle'
 
 interface BestSellersProps {
     cart: CartItem[];
@@ -11,14 +12,14 @@ interface BestSellersProps {
 
 export const BestSellers: React.FC<BestSellersProps> = ({ cart, updateQuantity, chefs, bestSellers }) => {
     return (
-        <section className="py-24 bg-white relative">
+        <section className="py-12 sm:py-16 md:py-20 lg:py-24 bg-white relative">
             <div className="absolute top-0 left-0 w-full h-full opacity-5 pattern-dots pointer-events-none"></div>
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-                <div className="text-center mb-16">
-                    <span className="text-[#8B2525] font-bold tracking-wider uppercase text-sm bg-red-50 px-3 py-1 rounded-full">الأعلى تقييماً</span>
-                    <h2 className="text-4xl font-bold text-gray-900 mt-4 mb-3">الأكثر طلباً 🌟</h2>
-                    <p className="text-gray-500 max-w-2xl mx-auto">الأكلات اللي الناس حبتها وطلبتها مرة واتنين.. جرب الطعم الأصلي.</p>
-                </div>
+                <SectionTitle
+                  label="الأعلى تقييماً"
+                  title="الأكثر طلباً 🌟"
+                  description="الأكلات اللي الناس حبتها وطلبتها مرة واتنين.. جرب الطعم الأصلي."
+                />
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                     {bestSellers.map(item => {
                          const chefObj = chefs.find(c => c.name === item.chef);
