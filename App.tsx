@@ -72,29 +72,30 @@ const App = () => {
         logger.info('APP', '🎯 App component mounted');
         checkAuthStatus();
         
+        // TEMPORARILY DISABLED AUTH LISTENER TO DEBUG INFINITE LOOP
         // Listen to auth state changes
-        const { data: authListener } = authService.onAuthStateChange(async (event, session) => {
-            logger.info('APP', '🔐 Auth state changed', { event, userId: session?.user?.id });
-            
-            if (event === 'SIGNED_IN' && session?.user) {
-                const profile = await authService.getProfile(session.user.id);
-                if (profile) {
-                    setCurrentUser(profile);
-                    setIsLoggedIn(true);
-                    setIsAdmin(profile.role === 'admin');
-                    localStorage.setItem('ghadwa_user', JSON.stringify(profile));
-                }
-            } else if (event === 'SIGNED_OUT') {
-                setCurrentUser(null);
-                setIsLoggedIn(false);
-                setIsAdmin(false);
-                localStorage.removeItem('ghadwa_user');
-            }
-        });
+        // const { data: authListener } = authService.onAuthStateChange(async (event, session) => {
+        //     logger.info('APP', '🔐 Auth state changed', { event, userId: session?.user?.id });
+        //     
+        //     if (event === 'SIGNED_IN' && session?.user) {
+        //         const profile = await authService.getProfile(session.user.id);
+        //         if (profile) {
+        //             setCurrentUser(profile);
+        //             setIsLoggedIn(true);
+        //             setIsAdmin(profile.role === 'admin');
+        //             localStorage.setItem('ghadwa_user', JSON.stringify(profile));
+        //         }
+        //     } else if (event === 'SIGNED_OUT') {
+        //         setCurrentUser(null);
+        //         setIsLoggedIn(false);
+        //         setIsAdmin(false);
+        //         localStorage.removeItem('ghadwa_user');
+        //     }
+        // });
         
         return () => {
             logger.debug('APP', '🔴 App component unmounting');
-            authListener?.subscription?.unsubscribe();
+            // authListener?.subscription?.unsubscribe();
         };
     }, []);
     
@@ -517,14 +518,16 @@ const App = () => {
         api.submitOrder(newOrder).then(success => {
             if(success) {
                 logger.info('ORDER', '🎉 Order submitted successfully to API', { orderId: newOrder.id });
+                setCart([]);
+                setOrderSuccess({ isOpen: true, orderId: newOrder.id });
+                logger.info('ORDER', '🛒 Cart cleared after order placement');
             } else {
-                logger.warn('ORDER', '⚠️ Order submission failed', { orderId: newOrder.id });
+                logger.error('ORDER', '❌ Order submission failed', { orderId: newOrder.id });
+                alert('عذراً، حدث خطأ أثناء إرسال الطلب. يرجى المحاولة مرة أخرى.');
+                // Remove the failed order from state
+                setOrders(orders.filter(o => o.id !== newOrder.id));
             }
         });
-        
-        setCart([]);
-        setOrderSuccess({ isOpen: true, orderId: newOrder.id });
-        logger.info('ORDER', '🛒 Cart cleared after order placement');
     };
 
     if (isLoading) {

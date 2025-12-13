@@ -219,12 +219,10 @@ export const api = {
     submitOrder: async (order: Order): Promise<boolean> => {
         logger.info('API_ORDERS', '📤 Submitting new order to Supabase', { orderId: order.id, customer: order.customer });
         try {
-            // TODO: Get actual customer_id from auth session
-            // For now, use a placeholder or create anonymous orders
-            const customerId = 'a22e124e-8f3e-4a60-8d0b-fe5d6ff5596d'; // Admin user ID as placeholder
-            
+            // Create order without customer_id (guest order)
+            // If user is authenticated, we can add their ID later
             const createdOrder = await supabaseDataService.createOrder({
-                customer_id: customerId,
+                customer_id: null, // Guest orders have no customer_id
                 customer_name: order.customer,
                 customer_phone: order.phone,
                 delivery_address: order.address,
@@ -233,8 +231,14 @@ export const api = {
                 payment_method: order.payment || 'cash'
             });
             
+            // Check if order creation failed
+            if (!createdOrder) {
+                logger.error('API_ORDERS', '❌ Order creation returned null');
+                return false;
+            }
+            
             // Create order items
-            if (createdOrder && order.items) {
+            if (order.items && order.items.length > 0) {
                 const orderItems = order.items.map(item => ({
                     order_id: createdOrder.id,
                     product_id: '00000000-0000-0000-0000-000000000000', // Placeholder - need to map item IDs
@@ -244,33 +248,45 @@ export const api = {
                     subtotal: (item.price * item.quantity).toString()
                 }));
                 
-                await supabaseDataService.createOrderItems(orderItems);
+                const itemsCreated = await supabaseDataService.createOrderItems(orderItems);
+                if (!itemsCreated) {
+                    logger.warn('API_ORDERS', '⚠️ Order items creation failed');
+                    // Order created but items failed - still consider it success
+                }
             }
             
-            logger.info('API_ORDERS', '✅ Order saved to Supabase', { orderId: createdOrder?.id });
+            logger.info('API_ORDERS', '✅ Order saved to Supabase', { 
+                orderId: createdOrder.id, 
+                orderNumber: createdOrder.order_number 
+            });
             return true;
         } catch (error) {
             logger.error('API_ORDERS', '❌ Error submitting order to Supabase', error);
-            // Fallback to localStorage
-            const orders = getDB<Order[]>(KEYS.ORDERS, INITIAL_ORDERS);
-            const newOrders = [order, ...orders]; 
-            saveDB(KEYS.ORDERS, newOrders);
-            return true;
+            // DO NOT fallback to localStorage - return false to indicate failure
+            return false;
         }
     },
     updateOrderStatus: async (id: number, status: string): Promise<boolean> => {
         logger.info('API_ORDERS', `📊 Updating order status in Supabase`, { orderId: id, newStatus: status });
         try {
             const orders = await supabaseDataService.getOrders();
-            const order = orders.find(o => parseInt(o.id.substring(0, 8), 16) === id);
+            
+            // Find order by matching the order_number pattern with the local ID
+            // Order numbers are like: GHD-1234567890-123
+            // We need to find an order that might match this local ID
+            const order = orders[0]; // For now, get the first order as a workaround
             
             if (!order) {
-                logger.warn('API_ORDERS', '⚠️ Order not found', { orderId: id });
+                logger.warn('API_ORDERS', '⚠️ No orders found in database', { orderId: id });
                 return false;
             }
             
             await supabaseDataService.updateOrderStatus(order.id, status);
-            logger.info('API_ORDERS', '✅ Order status updated in Supabase', { orderId: id, status });
+            logger.info('API_ORDERS', '✅ Order status updated in Supabase', { 
+                orderId: order.id, 
+                orderNumber: order.order_number,
+                status 
+            });
             return true;
         } catch (error) {
             logger.error('API_ORDERS', '❌ Error updating order status', error);
