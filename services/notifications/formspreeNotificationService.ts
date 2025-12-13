@@ -1,6 +1,6 @@
 import { env } from '../../config/env';
 import type { Order } from '../../types';
-import { logger } from '../logger';
+import { logger } from '../../utils/logger';
 
 export interface FormspreeNotificationResponse {
   success: boolean;

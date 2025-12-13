@@ -3,7 +3,7 @@ import type { Order } from '../../types';
 import { emailNotificationService } from './emailNotificationService';
 import { formspreeNotificationService } from './formspreeNotificationService';
 import { notificationService } from './notificationService';
-import { logger } from '../logger';
+import { logger } from '../../utils/logger';
 
 export interface FreeNotificationResponse {
   success: boolean;
