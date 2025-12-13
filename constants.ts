@@ -114,8 +114,8 @@ export const INITIAL_ORDERS: Order[] = [
     { 
         id: 1023, 
         customer: "أحمد علي", 
-        phone: "01012345678", 
-        address: "المعادي، شارع 9", 
+        phone: "201109318581", 
+        address: "طنطا، مصر", 
         date: getDate(0), 
         total: 450, 
         status: "pending", 
@@ -389,10 +389,10 @@ export const INITIAL_PROMO_CODES: PromoCode[] = [
 ];
 
 export const INITIAL_CONTACT_SETTINGS: ContactSettings = {
-    phone: "01000000000",
+    phone: "201109318581",
     whatsapp: "201109318581",
-    email: "hello@ghadwa.com",
-    address: "المعادي، القاهرة، مصر",
+    email: "ghadwa444@gmail.com",
+    address: "طنطا، مصر",
     facebookUrl: "#",
     instagramUrl: "#",
     tiktokUrl: "#"

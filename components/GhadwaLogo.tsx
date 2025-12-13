@@ -14,22 +14,22 @@ export const GhadwaLogo: React.FC<GhadwaLogoProps> = ({
   animated = false,
 }) => {
   const sizeClasses = {
-    xs: 'w-8 h-8 text-lg',
-    sm: 'w-10 h-10 text-xl',
-    md: 'w-12 h-12 text-2xl',
-    lg: 'w-16 h-16 text-4xl',
-    xl: 'w-20 h-20 text-4xl',
-    '2xl': 'w-24 h-24 text-5xl',
-    '3xl': 'w-32 h-32 text-6xl',
+    xs: 'w-8 h-8',
+    sm: 'w-10 h-10',
+    md: 'w-12 h-12',
+    lg: 'w-16 h-16',
+    xl: 'w-20 h-20',
+    '2xl': 'w-24 h-24',
+    '3xl': 'w-32 h-32',
   };
 
   const animationClass = animated ? 'animate-bounce' : '';
 
   const logo = (
     <div
-      className={`${sizeClasses[size]} bg-gradient-to-br from-[#8B2525] to-[#6b1c1c] rounded-full flex items-center justify-center text-white font-bold shadow-lg ${animationClass}`}
+      className={`${sizeClasses[size]} rounded-full flex items-center justify-center bg-white border border-gray-100 shadow-lg overflow-hidden ${animationClass}`}
     >
-      غ
+      <img src="/favicon/android-chrome-512x512.png" alt="شعار غدوة" className="w-full h-full object-contain" />
     </div>
   );
 

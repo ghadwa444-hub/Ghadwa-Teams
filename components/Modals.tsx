@@ -2,6 +2,8 @@
 import React, { useState } from 'react';
 import { MENU_CATEGORIES } from '../constants';
 import { MenuItem } from '../types';
+import { authService } from '../services/auth.service';
+import { logger } from '../utils/logger';
 
 // --- Auth Modal ---
 interface AuthModalProps {
@@ -14,22 +16,40 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLogin }
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
+        setLoading(true);
 
-        if (email.trim().toLowerCase() === 'admin@ghadwa.com' && password.trim() === 'admin123') {
-            onLogin('admin');
-            onClose();
-        } else {
-            // Simulate user login
-            if (email && password.length > 3) {
-                onLogin('user');
-                onClose();
-            } else {
+        try {
+            logger.info('AUTH_MODAL', '🔐 Attempting login', { email });
+
+            const { user, profile, error: authError } = await authService.signIn({
+                email: email.trim(),
+                password: password.trim()
+            });
+
+            if (authError || !user || !profile) {
                 setError('بيانات الدخول غير صحيحة');
+                logger.error('AUTH_MODAL', '❌ Login failed', authError);
+                setLoading(false);
+                return;
             }
+
+            // Store user info
+            localStorage.setItem('ghadwa_user', JSON.stringify(profile));
+            
+            // Call parent login handler with role
+            onLogin(profile.role);
+            logger.info('AUTH_MODAL', '✅ Login successful', { role: profile.role });
+            onClose();
+        } catch (err) {
+            setError('حدث خطأ في تسجيل الدخول');
+            logger.error('AUTH_MODAL', '❌ Login exception', err);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -76,8 +96,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLogin }
 
                         {error && <p className="text-red-500 text-sm font-bold text-center bg-red-50 p-2 rounded-lg">{error}</p>}
 
-                        <button type="submit" className="w-full bg-[#8B2525] text-white py-3.5 rounded-xl font-bold hover:bg-[#6b1c1c] transition-colors shadow-lg shadow-red-900/10 mt-6">
-                            تسجيل الدخول
+                        <button 
+                            type="submit" 
+                            disabled={loading}
+                            className="w-full bg-[#8B2525] text-white py-3.5 rounded-xl font-bold hover:bg-[#6b1c1c] transition-colors shadow-lg shadow-red-900/10 mt-6 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {loading ? 'جاري تسجيل الدخول...' : 'تسجيل الدخول'}
                         </button>
                     </form>
                 </div>

@@ -45,7 +45,9 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigate, currentPage, cartCou
         <nav className={`fixed w-full z-50 transition-all duration-300 ${scrolled ? 'bg-white/90 backdrop-blur-md shadow-sm py-3' : 'bg-transparent py-5'}`}>
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center">
                 <div className="flex items-center gap-2 cursor-pointer" onClick={() => onNavigate('home')}>
-                    <div className="w-10 h-10 bg-[#8B2525] rounded-full flex items-center justify-center text-white font-bold text-xl">غ</div>
+                    <div className="w-10 h-10 rounded-full overflow-hidden bg-white border border-gray-100 flex items-center justify-center">
+                        <img src="/favicon/android-chrome-512x512.png" alt="شعار غدوة" className="w-full h-full object-contain" />
+                    </div>
                     <span className={`text-2xl font-bold ${scrolled ? 'text-gray-900' : 'text-gray-900'} font-cairo`}>غدوة</span>
                 </div>
                 <div className="hidden md:flex items-center gap-8">

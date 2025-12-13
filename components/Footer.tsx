@@ -9,10 +9,10 @@ interface FooterProps {
 export const Footer: React.FC<FooterProps> = ({ contactSettings }) => {
     // Default fallback if not yet loaded
     const settings = contactSettings || {
-        phone: "01000000000",
-        whatsapp: "201000000000",
-        email: "hello@ghadwa.com",
-        address: "المعادي، القاهرة، مصر",
+        phone: "201109318581",
+        whatsapp: "201109318581",
+        email: "ghadwa444@gmail.com",
+        address: "طنطا، مصر",
         facebookUrl: "#",
         instagramUrl: "#",
     };
@@ -27,8 +27,8 @@ export const Footer: React.FC<FooterProps> = ({ contactSettings }) => {
                     {/* Brand Section */}
                     <div className="col-span-1 sm:col-span-2 lg:col-span-1">
                         <div className="flex items-center gap-3 mb-6 sm:mb-8">
-                            <div className="w-10 sm:w-12 h-10 sm:h-12 bg-[#8B2525] rounded-full flex items-center justify-center font-bold text-lg sm:text-2xl">
-                                غ
+                            <div className="w-10 sm:w-12 h-10 sm:h-12 rounded-full overflow-hidden bg-white border border-gray-100 flex items-center justify-center">
+                                <img src="/favicon/android-chrome-512x512.png" alt="شعار غدوة" className="w-full h-full object-contain" />
                             </div>
                             <span className="font-bold text-2xl sm:text-3xl">غدوة</span>
                         </div>
@@ -162,71 +162,6 @@ export const Footer: React.FC<FooterProps> = ({ contactSettings }) => {
                                 </li>
                             )}
                         </ul>
-                    </div>
-                </div>
-
-                {/* Attribution Section */}
-                <div className="py-8 sm:py-10 md:py-12 border-t border-gray-800 space-y-6 sm:space-y-8">
-                    {/* Credits */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8">
-                        <div>
-                            <h5 className="text-gray-300 font-semibold text-xs sm:text-sm mb-3 sm:mb-4">
-                                🏗️ تطوير البرنامج
-                            </h5>
-                            <p className="text-gray-500 text-xs sm:text-sm leading-relaxed">
-                                تم تطوير تطبيق غدوة بحب واهتمام باستخدام أحدث التقنيات.
-                                <span className="text-gray-400 block mt-2">
-                                    فريق التطوير: <span className="text-[#8B2525]">Ghadwa Development Team</span>
-                                </span>
-                            </p>
-                        </div>
-                        <div>
-                            <h5 className="text-gray-300 font-semibold text-xs sm:text-sm mb-3 sm:mb-4">
-                                🎨 التصميم و الفنون
-                            </h5>
-                            <p className="text-gray-500 text-xs sm:text-sm leading-relaxed">
-                                تصميم واجهات المستخدم والعلامة التجارية من قبل فريق متخصص.
-                                <span className="text-gray-400 block mt-2">
-                                    الأيقونات: <span className="text-[#8B2525]">Font Awesome 6.4.0</span>
-                                </span>
-                            </p>
-                        </div>
-                    </div>
-
-                    {/* Technologies Used */}
-                    <div>
-                        <h5 className="text-gray-300 font-semibold text-xs sm:text-sm mb-3 sm:mb-4">
-                            ⚙️ التقنيات المستخدمة
-                        </h5>
-                        <div className="flex flex-wrap gap-2 sm:gap-3">
-                            {[
-                                { name: 'React', icon: '⚛️' },
-                                { name: 'TypeScript', icon: '📘' },
-                                { name: 'Vite', icon: '⚡' },
-                                { name: 'Tailwind CSS', icon: '🎨' },
-                                { name: 'Supabase', icon: '🗄️' },
-                                { name: 'Vercel', icon: '▲' },
-                            ].map((tech) => (
-                                <div
-                                    key={tech.name}
-                                    className="bg-gray-800 text-gray-300 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm flex items-center gap-1.5 hover:bg-gray-700 transition"
-                                >
-                                    <span>{tech.icon}</span>
-                                    {tech.name}
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Third-party Acknowledegments */}
-                    <div>
-                        <h5 className="text-gray-300 font-semibold text-xs sm:text-sm mb-3 sm:mb-4">
-                            🙏 شكر وتقدير
-                        </h5>
-                        <p className="text-gray-500 text-xs sm:text-sm leading-relaxed">
-                            نشكر جميع الأدوات والمكتبات مفتوحة المصدر التي ساعدتنا في بناء هذا التطبيق.
-                            شكر خاص لفريق مصر وجميع المساهمين في المشروع.
-                        </p>
                     </div>
                 </div>
 

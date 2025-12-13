@@ -79,8 +79,8 @@ export const AdminStatsCard: React.FC<AdminStatsCardProps> = ({ title, value, ic
 
 export const LoadingScreen = () => (
     <div className="fixed inset-0 bg-white z-[100] flex flex-col items-center justify-center animate-fade-in">
-        <div className="w-24 h-24 bg-gradient-to-br from-[#8B2525] to-[#6b1c1c] rounded-full flex items-center justify-center text-white font-bold text-5xl mb-6 shadow-2xl animate-bounce">
-            غ
+        <div className="w-24 h-24 rounded-full flex items-center justify-center mb-6 shadow-2xl animate-bounce bg-white border border-gray-100">
+            <img src="/favicon/android-chrome-512x512.png" alt="شعار غدوة" className="w-16 h-16 object-contain" />
         </div>
         <h2 className="text-3xl font-bold text-gray-900 mb-3">غدوة</h2>
         <p className="text-gray-600 font-semibold mb-2">أكل بيتي يوصلك لحد بابك</p>

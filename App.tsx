@@ -4,11 +4,12 @@ import { Chef, Order, MenuItem, Box, CartItem, CheckoutForm, PromoCode, ContactS
 import { INITIAL_CHEFS, INITIAL_ORDERS, INITIAL_MENU_ITEMS, INITIAL_OFFERS, INITIAL_BOXES, INITIAL_BEST_SELLERS, INITIAL_PROMO_CODES, INITIAL_CONTACT_SETTINGS } from './constants';
 import { api } from './services/api';
 import { logger } from './utils/logger';
+import { authService } from './services/auth.service';
+import type { Profile } from './services/supabase';
 
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
 import { Hero } from './components/Hero';
-import { SupabaseTest } from './components/SupabaseTest';
 import { Features } from './components/Features';
 import { CartDrawer } from './components/CartDrawer';
 import { AuthModal, MenuModal, ChefConflictModal, OrderSuccessModal, ClearCartModal, ReviewModal } from './components/Modals';
@@ -39,7 +40,6 @@ import { AdminBoxes } from './components/admin/AdminBoxes';
 import { AdminBestSellers } from './components/admin/AdminBestSellers';
 import { AdminPromoCodes } from './components/admin/AdminPromoCodes';
 import { AdminContactSettings } from './components/admin/AdminContactSettings';
-import { DebugConsole } from './components/DebugConsole';
 
 const App = () => {
     // Data State
@@ -56,7 +56,6 @@ const App = () => {
     // UI State
     const [activePage, setActivePage] = useState('home');
     const [isLoading, setIsLoading] = useState(true);
-    const [showSupabaseTest, setShowSupabaseTest] = useState(false); // Dev: show Supabase test
     
     // App State
     const [selectedChef, setSelectedChef] = useState<Chef | null>(null);
@@ -66,14 +65,59 @@ const App = () => {
     const [favorites, setFavorites] = useState<MenuItem[]>([]);
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [isAdmin, setIsAdmin] = useState(false);
+    const [currentUser, setCurrentUser] = useState<Profile | null>(null);
     
-    // Log component mount
+    // Check authentication status on mount
     useEffect(() => {
         logger.info('APP', '🎯 App component mounted');
+        checkAuthStatus();
+        
+        // Listen to auth state changes
+        const { data: authListener } = authService.onAuthStateChange(async (event, session) => {
+            logger.info('APP', '🔐 Auth state changed', { event, userId: session?.user?.id });
+            
+            if (event === 'SIGNED_IN' && session?.user) {
+                const profile = await authService.getProfile(session.user.id);
+                if (profile) {
+                    setCurrentUser(profile);
+                    setIsLoggedIn(true);
+                    setIsAdmin(profile.role === 'admin');
+                    localStorage.setItem('ghadwa_user', JSON.stringify(profile));
+                }
+            } else if (event === 'SIGNED_OUT') {
+                setCurrentUser(null);
+                setIsLoggedIn(false);
+                setIsAdmin(false);
+                localStorage.removeItem('ghadwa_user');
+            }
+        });
+        
         return () => {
             logger.debug('APP', '🔴 App component unmounting');
+            authListener?.subscription?.unsubscribe();
         };
     }, []);
+    
+    // Check if user is already logged in
+    const checkAuthStatus = async () => {
+        try {
+            const { session } = await authService.getSession();
+            
+            if (session?.user) {
+                const profile = await authService.getProfile(session.user.id);
+                if (profile) {
+                    setCurrentUser(profile);
+                    setIsLoggedIn(true);
+                    setIsAdmin(profile.role === 'admin');
+                    logger.info('APP', '✅ User session restored', { role: profile.role });
+                }
+            } else {
+                logger.info('APP', 'ℹ️ No active session found');
+            }
+        } catch (error) {
+            logger.error('APP', '❌ Failed to check auth status', error);
+        }
+    };
 
     // Log page navigation changes
     useEffect(() => {
@@ -247,10 +291,19 @@ const App = () => {
         }
     };
 
-    const handleLogout = () => {
-        logger.info('AUTH', '🔐 User logged out');
-        setIsLoggedIn(false);
-        setIsAdmin(false);
+    const handleLogout = async () => {
+        logger.info('AUTH', '🔐 Logging out user');
+        
+        try {
+            await authService.signOut();
+            setIsLoggedIn(false);
+            setIsAdmin(false);
+            setCurrentUser(null);
+            localStorage.removeItem('ghadwa_user');
+            logger.info('AUTH', '✅ User logged out successfully');
+        } catch (error) {
+            logger.error('AUTH', '❌ Logout failed', error);
+        }
         setActivePage('home');
     };
 
@@ -483,24 +536,6 @@ const App = () => {
 
     return (
         <div className="min-h-screen bg-white text-gray-900 font-sans">
-            <DebugConsole />
-            
-            {/* Supabase Test (DEV ONLY) */}
-            {showSupabaseTest && (
-                <div className="max-w-7xl mx-auto px-4 py-6">
-                    <div className="flex justify-between items-center mb-4">
-                        <h2 className="text-2xl font-bold">Supabase Connection Test</h2>
-                        <button
-                            onClick={() => setShowSupabaseTest(false)}
-                            className="px-4 py-2 bg-gray-300 hover:bg-gray-400 rounded text-gray-800 font-semibold"
-                        >
-                            Close
-                        </button>
-                    </div>
-                    <SupabaseTest />
-                </div>
-            )}
-            
             <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} onLogin={handleLogin} />
             <MenuModal isOpen={isMenuOpen} onClose={() => setIsMenuOpen(false)} />
             <CartDrawer 
