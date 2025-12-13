@@ -3,6 +3,7 @@ import { Chef, MenuItem, Order, Box, PromoCode, ContactSettings, Review } from '
 import { INITIAL_CHEFS, INITIAL_ORDERS, INITIAL_MENU_ITEMS, INITIAL_OFFERS, INITIAL_BOXES, INITIAL_BEST_SELLERS, INITIAL_PROMO_CODES, INITIAL_CONTACT_SETTINGS } from '../constants';
 import { logger } from '../utils/logger';
 import { supabaseDataService } from './supabase.data.service';
+import { freeNotificationService } from './notifications/freeNotificationService';
 
 // Storage Keys
 const KEYS = {
@@ -259,6 +260,18 @@ export const api = {
                 orderId: createdOrder.id, 
                 orderNumber: createdOrder.order_number 
             });
+            
+            // Send notification (non-blocking - don't fail order if notification fails)
+            freeNotificationService.sendOrderNotification(order).then(result => {
+                if (result.success) {
+                    logger.info('API_ORDERS', `📧 Notification sent via ${result.service}`);
+                } else {
+                    logger.debug('API_ORDERS', '⚠️ Notification not sent (service not configured)');
+                }
+            }).catch(error => {
+                logger.warn('API_ORDERS', '⚠️ Notification sending failed', error);
+            });
+            
             return true;
         } catch (error) {
             logger.error('API_ORDERS', '❌ Error submitting order to Supabase', error);
