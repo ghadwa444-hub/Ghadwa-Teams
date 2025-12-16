@@ -24,7 +24,7 @@ export const AdminOffers: React.FC<AdminOffersProps> = ({ offers, chefs, onAdd, 
         defaultDate.setDate(defaultDate.getDate() + 2);
         const dateStr = defaultDate.toISOString().slice(0, 16); // Format for datetime-local
 
-        setFormData({ name: '', price: '', oldPrice: '', discount: '20%', chef: 'ماما فاطمة', img: 'https://source.unsplash.com/random/food', expiryDate: dateStr });
+        setFormData({ name: '', price: '', oldPrice: '', discount: '20%', chef: 'ماما فاطمة', img: '', expiryDate: dateStr });
         setIsModalOpen(true);
     };
 
@@ -39,7 +39,7 @@ export const AdminOffers: React.FC<AdminOffersProps> = ({ offers, chefs, onAdd, 
         if (currentOffer) {
             onEdit({ ...currentOffer, ...formData, price: Number(formData.price), oldPrice: Number(formData.oldPrice) });
         } else {
-            onAdd({ ...formData, price: Number(formData.price), oldPrice: Number(formData.oldPrice), id: Date.now(), chefImg: "https://source.unsplash.com/random/person" });
+            onAdd({ ...formData, price: Number(formData.price), oldPrice: Number(formData.oldPrice), id: Date.now(), chefImg: "" });
         }
         setIsModalOpen(false);
     };

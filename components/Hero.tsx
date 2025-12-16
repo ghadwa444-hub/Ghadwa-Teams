@@ -58,7 +58,7 @@ export const Hero: React.FC<HeroProps> = ({ onNavigate, onOpenMenu, onOpenAuth }
             <div className="relative w-full max-w-lg aspect-square">
               <div className="absolute inset-0 bg-[#8B2525] rounded-full opacity-5 blur-3xl transform rotate-12"></div>
               <img
-                src="https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=1000&auto=format&fit=crop"
+                src=""
                 alt="Delicious Food"
                 className="w-full h-full object-cover rounded-full shadow-2xl border-8 border-white relative z-10"
               />

@@ -111,16 +111,19 @@ export const supabaseHealthCheck = async (): Promise<{
 
 export default supabase;
 
-// Expose health check on window for easy testing in console
+// Expose Supabase client on window for easy testing in console
 if (typeof window !== 'undefined') {
-  (window as any).GhadwaSupabase = {
+  // Expose the full Supabase client for database console tests
+  (window as any).GhadwaSupabase = supabase;
+  
+  // Also expose utility functions
+  (window as any).GhadwaSupabaseUtils = {
     healthCheck: supabaseHealthCheck,
     testConnection: checkSupabaseConnection,
-    testDatabase: testDatabaseConnection,
-    client: supabase
+    testDatabase: testDatabaseConnection
   };
   
   logger.info('SUPABASE', '🪟 Supabase exposed on window.GhadwaSupabase for testing', {
-    methods: ['healthCheck()', 'testConnection()', 'testDatabase()']
+    methods: ['from()', 'auth', 'storage']
   });
 }

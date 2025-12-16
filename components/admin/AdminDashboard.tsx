@@ -192,7 +192,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ orders, chefs, m
                     <div className="bg-gradient-to-br from-[#8B2525] to-[#5e1818] rounded-2xl shadow-lg p-6 text-white relative overflow-hidden">
                         <div className="absolute top-0 right-0 w-32 h-32 bg-white opacity-5 rounded-full -mr-10 -mt-10"></div>
                         <div className="relative z-10 flex items-center gap-4">
-                            <img src={topChef.img || "https://source.unsplash.com/random/person"} alt="Top Chef" className="w-16 h-16 rounded-full border-2 border-white/50 object-cover" />
+                            <img src={topChef.img || ""} alt="Top Chef" className="w-16 h-16 rounded-full border-2 border-white/50 object-cover" />
                             <div>
                                 <p className="text-white/60 text-xs font-bold uppercase tracking-wider mb-1">شيف الشهر 🏆</p>
                                 <h3 className="font-bold text-lg">{topChef.name}</h3>

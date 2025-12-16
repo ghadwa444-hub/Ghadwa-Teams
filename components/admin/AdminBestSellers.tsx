@@ -18,7 +18,7 @@ export const AdminBestSellers: React.FC<AdminBestSellersProps> = ({ bestSellers,
 
     const openAdd = () => {
         setCurrentItem(null);
-        setFormData({ name: '', price: '', category: '', chef: '', desc: '', img: 'https://source.unsplash.com/random/food' });
+        setFormData({ name: '', price: '', category: '', chef: '', desc: '', img: '' });
         setIsModalOpen(true);
     };
 

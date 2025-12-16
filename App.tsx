@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Chef, Order, MenuItem, Box, CartItem, CheckoutForm, PromoCode, ContactSettings } from './types';
-import { INITIAL_CHEFS, INITIAL_ORDERS, INITIAL_MENU_ITEMS, INITIAL_OFFERS, INITIAL_BOXES, INITIAL_BEST_SELLERS, INITIAL_PROMO_CODES, INITIAL_CONTACT_SETTINGS } from './constants';
+import { MENU_CATEGORIES } from './constants';
 import { api } from './services/api';
 import { logger } from './utils/logger';
 import { authService } from './services/auth.service';
@@ -43,14 +43,22 @@ import { AdminContactSettings } from './components/admin/AdminContactSettings';
 
 const App = () => {
     // Data State
-    const [chefs, setChefs] = useState<Chef[]>(INITIAL_CHEFS);
-    const [orders, setOrders] = useState<Order[]>(INITIAL_ORDERS);
-    const [menuItems, setMenuItems] = useState<MenuItem[]>(INITIAL_MENU_ITEMS);
-    const [offers, setOffers] = useState<MenuItem[]>(INITIAL_OFFERS);
-    const [boxes, setBoxes] = useState<Box[]>(INITIAL_BOXES);
-    const [bestSellers, setBestSellers] = useState<MenuItem[]>(INITIAL_BEST_SELLERS);
-    const [promoCodes, setPromoCodes] = useState<PromoCode[]>(INITIAL_PROMO_CODES);
-    const [contactSettings, setContactSettings] = useState<ContactSettings>(INITIAL_CONTACT_SETTINGS);
+    const [chefs, setChefs] = useState<Chef[]>([]);
+    const [orders, setOrders] = useState<Order[]>([]);
+    const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+    const [offers, setOffers] = useState<MenuItem[]>([]);
+    const [boxes, setBoxes] = useState<Box[]>([]);
+    const [bestSellers, setBestSellers] = useState<MenuItem[]>([]);
+    const [promoCodes, setPromoCodes] = useState<PromoCode[]>([]);
+    const [contactSettings, setContactSettings] = useState<ContactSettings>({
+        phone: '',
+        whatsapp: '',
+        email: '',
+        address: '',
+        facebookUrl: '',
+        instagramUrl: '',
+        tiktokUrl: ''
+    });
     const [visitors, setVisitors] = useState(1250);
 
     // UI State

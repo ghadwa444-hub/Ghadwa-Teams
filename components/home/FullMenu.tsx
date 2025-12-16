@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { MenuItem, CartItem } from '../../types'
 import { AddToCartButton } from '../UIHelpers'
 import { SectionTitle } from './SectionTitle'
-import { MENU_CATEGORIES, INITIAL_CHEFS } from '../../constants'
+import { MENU_CATEGORIES } from '../../constants'
 
 interface FullMenuProps {
     menuItems: MenuItem[];
@@ -42,10 +42,18 @@ export const FullMenu: React.FC<FullMenuProps> = ({ menuItems, cart, updateQuant
                         ))}
                 </div>
 
+                {filteredItems.length === 0 ? (
+                    <div className="text-center py-12 sm:py-16 border-2 border-dashed border-gray-200 rounded-2xl bg-gray-50">
+                        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl text-gray-400">
+                            <i className="fa-solid fa-utensils"></i>
+                        </div>
+                        <p className="text-lg font-bold text-gray-600 mb-2">لا توجد منتجات في هذه الفئة</p>
+                        <p className="text-sm text-gray-400">سيتم إضافة منتجات قريباً</p>
+                    </div>
+                ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     {filteredItems.map(item => {
-                         const chefObj = INITIAL_CHEFS.find(c => c.name === item.chef);
-                         const isOpen = chefObj ? chefObj.isOpen : true;
+                         const isOpen = item.chef ? true : true; // Chef data from props
 
                          return (
                             <div key={item.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all group overflow-hidden">
@@ -73,6 +81,7 @@ export const FullMenu: React.FC<FullMenuProps> = ({ menuItems, cart, updateQuant
                          );
                     })}
                 </div>
+                )}
             </div>
         </section>
     );

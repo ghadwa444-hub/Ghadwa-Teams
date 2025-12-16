@@ -424,6 +424,29 @@ export class SupabaseDataService {
       return false;
     }
   }
+
+  // ==========================================================================
+  // BOXES
+  // ==========================================================================
+
+  async getBoxes(): Promise<any[]> {
+    try {
+      logger.info('SUPABASE', '🔍 Fetching boxes...');
+      
+      const { data, error } = await supabase
+        .from('boxes')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      logger.info('SUPABASE', `✅ Fetched ${data?.length || 0} boxes`);
+      return data || [];
+    } catch (error) {
+      logger.error('SUPABASE', '❌ Failed to fetch boxes', error);
+      return [];
+    }
+  }
 }
 
 export const supabaseDataService = new SupabaseDataService();

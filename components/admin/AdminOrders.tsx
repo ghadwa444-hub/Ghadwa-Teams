@@ -1,6 +1,8 @@
 
 import React, { useState } from 'react';
 import { Order } from '../../types';
+import { validateOrderStatus } from '../../utils/validations';
+import { supabase } from '../../services/supabase';
 
 interface AdminOrdersProps {
     orders: Order[];
@@ -16,7 +18,20 @@ interface OrderCardProps {
     onViewOrder: (order: Order) => void;
 }
 
-const OrderCard: React.FC<OrderCardProps> = ({ order, updateOrderStatus, onDeleteOrder, onViewOrder }) => (
+const OrderCard: React.FC<OrderCardProps & { isLoading: boolean; onStatusChange: (id: number, status: string) => Promise<void>; onDeleteConfirm: (id: number) => void }> = ({ order, updateOrderStatus, onDeleteOrder, onViewOrder, isLoading, onStatusChange, onDeleteConfirm }) => {
+    const [isPending, setIsPending] = useState(false);
+
+    const handleStatusChange = async (newStatus: string) => {
+        setIsPending(true);
+        try {
+            await onStatusChange(order.id, newStatus);
+            updateOrderStatus(order.id, newStatus);
+        } finally {
+            setIsPending(false);
+        }
+    };
+
+    return (
     <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition mb-3 group animate-fade-in">
         <div className="flex justify-between items-start mb-3">
             <div className="flex items-center gap-2">
@@ -28,9 +43,10 @@ const OrderCard: React.FC<OrderCardProps> = ({ order, updateOrderStatus, onDelet
                     <i className="fa-solid fa-eye"></i>
                 </button>
                 <button 
-                    onClick={(e) => { e.stopPropagation(); onDeleteOrder(order.id); }} 
+                    onClick={(e) => { e.stopPropagation(); onDeleteConfirm(order.id); }} 
                     className="w-6 h-6 rounded-full bg-red-50 text-red-600 flex items-center justify-center hover:bg-red-100 text-xs" 
                     title="حذف"
+                    disabled={isPending}
                 >
                     <i className="fa-solid fa-trash"></i>
                 </button>
@@ -45,26 +61,32 @@ const OrderCard: React.FC<OrderCardProps> = ({ order, updateOrderStatus, onDelet
             
             {order.status === 'pending' && (
                 <button 
-                    onClick={() => updateOrderStatus(order.id, 'cooking')} 
-                    className="bg-orange-100 text-orange-700 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-orange-200 transition flex items-center gap-1"
+                    onClick={() => handleStatusChange('cooking')} 
+                    disabled={isPending}
+                    className="bg-orange-100 text-orange-700 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-orange-200 transition flex items-center gap-1 disabled:opacity-50"
                 >
-                    بدء التحضير <i className="fa-solid fa-fire-burner"></i>
+                    {isPending ? <i className="fa-solid fa-spinner animate-spin"></i> : <i className="fa-solid fa-fire-burner"></i>}
+                    بدء التحضير
                 </button>
             )}
             {order.status === 'cooking' && (
                 <button 
-                    onClick={() => updateOrderStatus(order.id, 'out_for_delivery')} 
-                    className="bg-blue-100 text-blue-700 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-blue-200 transition flex items-center gap-1"
+                    onClick={() => handleStatusChange('out_for_delivery')} 
+                    disabled={isPending}
+                    className="bg-blue-100 text-blue-700 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-blue-200 transition flex items-center gap-1 disabled:opacity-50"
                 >
-                    تسليم للطيار <i className="fa-solid fa-motorcycle"></i>
+                    {isPending ? <i className="fa-solid fa-spinner animate-spin"></i> : <i className="fa-solid fa-motorcycle"></i>}
+                    تسليم للطيار
                 </button>
             )}
             {order.status === 'out_for_delivery' && (
                 <button 
-                    onClick={() => updateOrderStatus(order.id, 'delivered')} 
-                    className="bg-green-100 text-green-700 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-green-200 transition flex items-center gap-1"
+                    onClick={() => handleStatusChange('delivered')} 
+                    disabled={isPending}
+                    className="bg-green-100 text-green-700 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-green-200 transition flex items-center gap-1 disabled:opacity-50"
                 >
-                    تم التوصيل <i className="fa-solid fa-check"></i>
+                    {isPending ? <i className="fa-solid fa-spinner animate-spin"></i> : <i className="fa-solid fa-check"></i>}
+                    تم التوصيل
                 </button>
             )}
             {order.status === 'delivered' && (
@@ -74,13 +96,99 @@ const OrderCard: React.FC<OrderCardProps> = ({ order, updateOrderStatus, onDelet
             )}
         </div>
     </div>
-);
+);};
 
 export const AdminOrders: React.FC<AdminOrdersProps> = ({ orders, updateOrderStatus, onDeleteOrder, onViewOrder }) => {
     const [viewMode, setViewMode] = useState('board');
+    const [isLoading, setIsLoading] = useState(false);
+    const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+    const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
+
+    const showNotification = (type: 'success' | 'error', message: string) => {
+        setNotification({ type, message });
+        setTimeout(() => setNotification(null), 3000);
+    };
+
+    const handleStatusChange = async (orderId: number, newStatus: string) => {
+        const validation = validateOrderStatus(newStatus);
+        if (!validation.valid) {
+            showNotification('error', validation.error || 'Invalid status');
+            return;
+        }
+
+        try {
+            setIsLoading(true);
+            const { error } = await supabase
+                .from('orders')
+                .update({ status: newStatus })
+                .eq('id', orderId);
+
+            if (error) throw error;
+            showNotification('success', 'Order status updated! ✅');
+        } catch (error) {
+            console.error('Error updating order:', error);
+            showNotification('error', `Error: ${error instanceof Error ? error.message : 'Failed to update order'}`);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleDelete = async (id: number) => {
+        try {
+            setIsLoading(true);
+            const { error } = await supabase
+                .from('orders')
+                .delete()
+                .eq('id', id);
+
+            if (error) throw error;
+            onDeleteOrder(id);
+            setDeleteConfirm(null);
+            showNotification('success', 'Order deleted successfully! 🗑️');
+        } catch (error) {
+            console.error('Error deleting order:', error);
+            showNotification('error', `Error: ${error instanceof Error ? error.message : 'Failed to delete order'}`);
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     return (
         <div className="space-y-6 animate-fade-in-up h-[calc(100vh-140px)] flex flex-col">
+            {/* Notification Toast */}
+            {notification && (
+                <div className={`fixed top-4 right-4 px-6 py-3 rounded-xl font-bold text-white shadow-lg z-50 animate-bounce ${
+                    notification.type === 'success' ? 'bg-green-500' : 'bg-red-500'
+                }`}>
+                    {notification.message}
+                </div>
+            )}
+
+            {/* Delete Confirmation Dialog */}
+            {deleteConfirm !== null && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-2xl p-6 max-w-sm shadow-xl">
+                        <h3 className="text-xl font-bold text-gray-900 mb-2">Delete Order?</h3>
+                        <p className="text-gray-600 mb-6">This action cannot be undone. Are you sure?</p>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setDeleteConfirm(null)}
+                                className="flex-1 bg-gray-200 text-gray-900 py-2 rounded-lg font-bold hover:bg-gray-300 transition"
+                                disabled={isLoading}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={() => handleDelete(deleteConfirm)}
+                                className="flex-1 bg-red-500 text-white py-2 rounded-lg font-bold hover:bg-red-600 transition disabled:opacity-50"
+                                disabled={isLoading}
+                            >
+                                {isLoading ? 'Deleting...' : 'Delete'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
             <div className="flex justify-between items-center shrink-0">
                 <h2 className="text-3xl font-bold text-gray-900">متابعة الطلبات 🕵️‍♂️</h2>
                 <div className="flex bg-gray-200 p-1 rounded-xl">
@@ -140,8 +248,10 @@ export const AdminOrders: React.FC<AdminOrdersProps> = ({ orders, updateOrderSta
                                         </button>
                                         <select 
                                             value={order.status}
-                                            onChange={(e) => updateOrderStatus(order.id, e.target.value)}
-                                            className="bg-white border border-gray-200 rounded-lg px-2 py-1 text-sm focus:border-[#8B2525] focus:ring-0 outline-none text-gray-900 cursor-pointer"
+                                            onChange={(e) => handleStatusChange(order.id, e.target.value)}
+                                            disabled={isLoading}
+                                            title="Change order status"
+                                            className="bg-white border border-gray-200 rounded-lg px-2 py-1 text-sm focus:border-[#8B2525] focus:ring-0 outline-none text-gray-900 cursor-pointer disabled:opacity-50"
                                         >
                                             <option value="pending">قيد الانتظار</option>
                                             <option value="cooking">جاري التحضير</option>
@@ -149,9 +259,10 @@ export const AdminOrders: React.FC<AdminOrdersProps> = ({ orders, updateOrderSta
                                             <option value="delivered">تم التوصيل</option>
                                         </select>
                                         <button 
-                                            onClick={(e) => { e.stopPropagation(); onDeleteOrder(order.id); }} 
-                                            className="bg-red-50 text-red-600 p-2 rounded-lg hover:bg-red-100 transition" 
+                                            onClick={(e) => { e.stopPropagation(); setDeleteConfirm(order.id); }} 
+                                            className="bg-red-50 text-red-600 p-2 rounded-lg hover:bg-red-100 transition disabled:opacity-50" 
                                             title="حذف"
+                                            disabled={isLoading}
                                         >
                                             <i className="fa-solid fa-trash"></i>
                                         </button>
@@ -180,7 +291,10 @@ export const AdminOrders: React.FC<AdminOrdersProps> = ({ orders, updateOrderSta
                                     order={order} 
                                     updateOrderStatus={updateOrderStatus} 
                                     onDeleteOrder={onDeleteOrder} 
-                                    onViewOrder={onViewOrder} 
+                                    onViewOrder={onViewOrder}
+                                    isLoading={isLoading}
+                                    onStatusChange={handleStatusChange}
+                                    onDeleteConfirm={setDeleteConfirm}
                                 />
                             ))}
                         </div>
@@ -203,7 +317,10 @@ export const AdminOrders: React.FC<AdminOrdersProps> = ({ orders, updateOrderSta
                                     order={order} 
                                     updateOrderStatus={updateOrderStatus} 
                                     onDeleteOrder={onDeleteOrder} 
-                                    onViewOrder={onViewOrder} 
+                                    onViewOrder={onViewOrder}
+                                    isLoading={isLoading}
+                                    onStatusChange={handleStatusChange}
+                                    onDeleteConfirm={setDeleteConfirm}
                                 />
                             ))}
                         </div>
@@ -226,7 +343,10 @@ export const AdminOrders: React.FC<AdminOrdersProps> = ({ orders, updateOrderSta
                                     order={order} 
                                     updateOrderStatus={updateOrderStatus} 
                                     onDeleteOrder={onDeleteOrder} 
-                                    onViewOrder={onViewOrder} 
+                                    onViewOrder={onViewOrder}
+                                    isLoading={isLoading}
+                                    onStatusChange={handleStatusChange}
+                                    onDeleteConfirm={setDeleteConfirm}
                                 />
                             ))}
                         </div>
@@ -249,7 +369,10 @@ export const AdminOrders: React.FC<AdminOrdersProps> = ({ orders, updateOrderSta
                                     order={order} 
                                     updateOrderStatus={updateOrderStatus} 
                                     onDeleteOrder={onDeleteOrder} 
-                                    onViewOrder={onViewOrder} 
+                                    onViewOrder={onViewOrder}
+                                    isLoading={isLoading}
+                                    onStatusChange={handleStatusChange}
+                                    onDeleteConfirm={setDeleteConfirm}
                                 />
                             ))}
                         </div>

@@ -1,6 +1,5 @@
 
 import { Chef, MenuItem, Order, Box, PromoCode, ContactSettings, Review } from '../types';
-import { INITIAL_CHEFS, INITIAL_ORDERS, INITIAL_MENU_ITEMS, INITIAL_OFFERS, INITIAL_BOXES, INITIAL_BEST_SELLERS, INITIAL_PROMO_CODES, INITIAL_CONTACT_SETTINGS } from '../constants';
 import { logger } from '../utils/logger';
 import { supabaseDataService } from './supabase.data.service';
 import { freeNotificationService } from './notifications/freeNotificationService';
@@ -72,7 +71,7 @@ export const api = {
         } catch (error) {
             logger.error('API_CHEFS', '❌ Error fetching chefs from Supabase, falling back to localStorage', error);
             // Fallback to localStorage if Supabase fails
-            const data = getDB<Chef[]>(KEYS.CHEFS, INITIAL_CHEFS);
+            const data = getDB<Chef[]>(KEYS.CHEFS, []);
             return data;
         }
     },
@@ -98,7 +97,7 @@ export const api = {
             return data;
         } catch (error) {
             logger.error('API_ORDERS', '❌ Error fetching orders from Supabase, falling back', error);
-            const data = getDB<Order[]>(KEYS.ORDERS, INITIAL_ORDERS);
+            const data = getDB<Order[]>(KEYS.ORDERS, []);
             return data;
         }
     },
@@ -124,7 +123,7 @@ export const api = {
             return data;
         } catch (error) {
             logger.error('API_MENU', '❌ Error fetching menu items from Supabase, falling back', error);
-            const data = getDB<MenuItem[]>(KEYS.MENU, INITIAL_MENU_ITEMS);
+            const data = getDB<MenuItem[]>(KEYS.MENU, []);
             return data;
         }
     },
@@ -152,15 +151,19 @@ export const api = {
             return data;
         } catch (error) {
             logger.error('API_OFFERS', '❌ Error fetching offers, falling back', error);
-            return getDB<MenuItem[]>(KEYS.OFFERS, INITIAL_OFFERS);
+            return getDB<MenuItem[]>(KEYS.OFFERS, []);
         }
     },
     getBoxes: async () => {
-        logger.debug('API_BOXES', '🔄 Fetching boxes from API...');
-        await delay(500);
-        const data = getDB<Box[]>(KEYS.BOXES, INITIAL_BOXES);
-        logger.info('API_BOXES', `✅ Fetched ${data.length} boxes`, { count: data.length });
-        return data;
+        logger.debug('API_BOXES', '🔄 Fetching boxes from Supabase...');
+        try {
+            const data = await supabaseDataService.getBoxes();
+            logger.info('API_BOXES', `✅ Fetched ${data.length} boxes from Supabase`, { count: data.length });
+            return data;
+        } catch (error) {
+            logger.error('API_BOXES', '❌ Error fetching boxes, falling back to empty array', error);
+            return [];
+        }
     },
     getBestSellers: async () => {
         logger.debug('API_BESTSELLERS', '🔄 Fetching best sellers from Supabase...');
@@ -186,13 +189,13 @@ export const api = {
             return data;
         } catch (error) {
             logger.error('API_BESTSELLERS', '❌ Error fetching best sellers, falling back', error);
-            return getDB<MenuItem[]>(KEYS.BEST_SELLERS, INITIAL_BEST_SELLERS);
+            return getDB<MenuItem[]>(KEYS.BEST_SELLERS, []);
         }
     },
     getPromoCodes: async () => {
         logger.debug('API_PROMOS', '🔄 Fetching promo codes from API...');
         await delay(500);
-        const data = getDB<PromoCode[]>(KEYS.PROMOS, INITIAL_PROMO_CODES);
+        const data = getDB<PromoCode[]>(KEYS.PROMOS, []);
         logger.info('API_PROMOS', `✅ Fetched ${data.length} promo codes`, { count: data.length });
         return data;
     },
@@ -212,7 +215,15 @@ export const api = {
             return data;
         } catch (error) {
             logger.error('API_SETTINGS', '❌ Error fetching settings, falling back', error);
-            return getDB<ContactSettings>(KEYS.SETTINGS, INITIAL_CONTACT_SETTINGS);
+            return getDB<ContactSettings>(KEYS.SETTINGS, {
+                phone: '',
+                whatsapp: '',
+                email: '',
+                address: '',
+                facebookUrl: '',
+                instagramUrl: '',
+                tiktokUrl: ''
+            });
         }
     },
     
@@ -504,21 +515,21 @@ export const api = {
     addBox: async (box: Box) => {
         logger.warn('API_BOXES', '📦 Boxes still using localStorage - not in Supabase yet');
         await delay(300);
-        const data = getDB<Box[]>(KEYS.BOXES, INITIAL_BOXES);
+        const data = getDB<Box[]>(KEYS.BOXES, []);
         saveDB(KEYS.BOXES, [...data, box]);
         return true;
     },
     updateBox: async (box: Box) => {
         logger.warn('API_BOXES', '📦 Boxes still using localStorage - not in Supabase yet');
         await delay(300);
-        const data = getDB<Box[]>(KEYS.BOXES, INITIAL_BOXES);
+        const data = getDB<Box[]>(KEYS.BOXES, []);
         saveDB(KEYS.BOXES, data.map(b => b.id === box.id ? box : b));
         return true;
     },
     deleteBox: async (id: number) => {
         logger.warn('API_BOXES', '📦 Boxes still using localStorage - not in Supabase yet');
         await delay(300);
-        const data = getDB<Box[]>(KEYS.BOXES, INITIAL_BOXES);
+        const data = getDB<Box[]>(KEYS.BOXES, []);
         saveDB(KEYS.BOXES, data.filter(b => b.id !== id));
         return true;
     },
@@ -544,14 +555,14 @@ export const api = {
     addPromoCode: async (promo: PromoCode) => {
         logger.warn('API_PROMOS', '🎫 Promo codes still using localStorage - not in Supabase yet');
         await delay(300);
-        const data = getDB<PromoCode[]>(KEYS.PROMOS, INITIAL_PROMO_CODES);
+        const data = getDB<PromoCode[]>(KEYS.PROMOS, []);
         saveDB(KEYS.PROMOS, [...data, promo]);
         return true;
     },
     deletePromoCode: async (id: number) => {
         logger.warn('API_PROMOS', '🎫 Promo codes still using localStorage - not in Supabase yet');
         await delay(300);
-        const data = getDB<PromoCode[]>(KEYS.PROMOS, INITIAL_PROMO_CODES);
+        const data = getDB<PromoCode[]>(KEYS.PROMOS, []);
         saveDB(KEYS.PROMOS, data.filter(p => p.id !== id));
         return true;
     },

@@ -3,7 +3,6 @@ import React, { useState, useEffect } from 'react'
 import { MenuItem, CartItem } from '../../types'
 import { AddToCartButton } from '../UIHelpers'
 import { SectionTitle } from './SectionTitle'
-import { INITIAL_CHEFS } from '../../constants'
 
 interface WeeklyOffersProps {
     offers: MenuItem[];
@@ -87,10 +86,18 @@ export const WeeklyOffers: React.FC<WeeklyOffersProps> = ({ offers, cart, update
                   title="عروض الأسبوع النارية 🔥"
                   description="أقوى التوفير على أحلى الأكلات البيتي"
                 />
+                {offers.length === 0 ? (
+                    <div className="text-center py-12 sm:py-16 border-2 border-dashed border-red-200 rounded-2xl bg-red-50">
+                        <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl text-red-400">
+                            <i className="fa-solid fa-fire"></i>
+                        </div>
+                        <p className="text-lg font-bold text-red-600 mb-2">لا توجد عروض متاحة الآن</p>
+                        <p className="text-sm text-red-400">سيتم إضافة عروض حصرية قريباً</p>
+                    </div>
+                ) : (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                     {offers.map(offer => {
-                         const chefObj = INITIAL_CHEFS.find(c => c.name === offer.chef);
-                         const isOpen = chefObj ? chefObj.isOpen : true;
+                         const isOpen = offer.chef ? true : true; // Chef data now comes from props
 
                          return (
                         <div key={offer.id} className="flex flex-col bg-white rounded-[2rem] shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100 group overflow-hidden h-full transform hover:-translate-y-1">
@@ -115,7 +122,7 @@ export const WeeklyOffers: React.FC<WeeklyOffersProps> = ({ offers, cart, update
 
                                 <div className="absolute bottom-4 right-4 text-white">
                                     <div className="flex items-center gap-2 mb-1">
-                                        <img src={offer.chefImg || "https://source.unsplash.com/random/person"} alt={offer.chef} className="w-8 h-8 rounded-full border-2 border-white" />
+                                        <img src={offer.chefImg || ""} alt={offer.chef} className="w-8 h-8 rounded-full border-2 border-white" />
                                         <p className="text-xs font-bold opacity-90">{offer.chef}</p>
                                     </div>
                                     <h3 className="font-bold text-xl">{offer.name}</h3>
@@ -145,6 +152,7 @@ export const WeeklyOffers: React.FC<WeeklyOffersProps> = ({ offers, cart, update
                         </div>
                     )})}
                 </div>
+                )}
             </div>
         </section>
     );
