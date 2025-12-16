@@ -53,12 +53,10 @@ export const FullMenu: React.FC<FullMenuProps> = ({ menuItems, cart, updateQuant
                 ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     {filteredItems.map(item => {
-                         const isOpen = item.chef ? true : true; // Chef data from props
-
                          return (
                             <div key={item.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all group overflow-hidden">
                                 <div className="h-48 relative overflow-hidden">
-                                    <img src={item.img} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                    <img src={item.image_url || 'https://via.placeholder.com/300x300?text=Menu'} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                                     <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-lg text-xs font-bold flex items-center gap-1 shadow-sm">
                                         <i className="fa-solid fa-star text-yellow-400"></i>
                                         {item.rating || 5.0}
@@ -71,11 +69,11 @@ export const FullMenu: React.FC<FullMenuProps> = ({ menuItems, cart, updateQuant
                                     </div>
                                     <p className="text-xs text-gray-500 mb-4 flex items-center gap-1">
                                         <i className="fa-solid fa-clock"></i>
-                                        {item.time || "45 د"}
+                                        {item.prep_time ? `${item.prep_time} د` : "45 د"}
                                         <span className="mx-1">•</span>
-                                        <span className="text-gray-400">مطبخ {item.chef}</span>
+                                        <span className="text-gray-400">{item.category || "أصناف"}</span>
                                     </p>
-                                    <AddToCartButton item={item} cart={cart} updateQuantity={updateQuantity} className="w-full py-2.5" disabled={!isOpen} />
+                                    <AddToCartButton item={item} cart={cart} updateQuantity={updateQuantity} className="w-full py-2.5" disabled={!item.is_available} />
                                 </div>
                             </div>
                          );

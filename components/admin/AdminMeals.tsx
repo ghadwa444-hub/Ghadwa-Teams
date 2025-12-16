@@ -12,17 +12,17 @@ interface AdminMealsProps {
     chefs: Chef[];
     onAdd: (meal: MenuItem) => void;
     onEdit: (meal: MenuItem) => void;
-    onDelete: (id: number) => void;
+    onDelete: (id: string) => void;
 }
 
 export const AdminMeals: React.FC<AdminMealsProps> = ({ meals, chefs, onAdd, onEdit, onDelete }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [currentMeal, setCurrentMeal] = useState<MenuItem | null>(null);
-    const [formData, setFormData] = useState<any>({ name: '', price: '', category: '', chef: '', img: '', time: '' });
+    const [formData, setFormData] = useState<any>({ name: '', description: '', price: '', category: '', chef_id: '', image_url: '' });
     const [formErrors, setFormErrors] = useState<Record<string, string>>({});
     const [isLoading, setIsLoading] = useState(false);
     const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
-    const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
+    const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
     const [imagePreview, setImagePreview] = useState<string>('');
     const imageRef = useRef<HTMLInputElement>(null);
 
@@ -32,7 +32,7 @@ export const AdminMeals: React.FC<AdminMealsProps> = ({ meals, chefs, onAdd, onE
     };
 
     const clearForm = () => {
-        setFormData({ name: '', price: '', category: '', chef: '', img: '', time: '' });
+        setFormData({ name: '', description: '', price: '', category: '', chef_id: '', image_url: '' });
         setFormErrors({});
         setImagePreview('');
         if (imageRef.current) imageRef.current.value = '';
@@ -41,14 +41,21 @@ export const AdminMeals: React.FC<AdminMealsProps> = ({ meals, chefs, onAdd, onE
     const openAdd = () => {
         setCurrentMeal(null);
         clearForm();
-        setFormData({ name: '', price: '', category: 'مشويات', chef: '', img: '', time: '45 د' });
+        setFormData({ name: '', description: '', price: '', category: 'مشويات', chef_id: '', image_url: '' });
         setIsModalOpen(true);
     };
 
     const openEdit = (meal: MenuItem) => {
         setCurrentMeal(meal);
-        setFormData(meal);
-        setImagePreview(meal.img || '');
+        setFormData({
+            name: meal.name,
+            description: meal.description || '',
+            price: meal.price,
+            category: meal.category,
+            chef_id: meal.chef_id,
+            image_url: meal.image_url || ''
+        });
+        setImagePreview(meal.image_url || '');
         setFormErrors({});
         setIsModalOpen(true);
     };
@@ -71,12 +78,12 @@ export const AdminMeals: React.FC<AdminMealsProps> = ({ meals, chefs, onAdd, onE
             name: formData.name,
             price: formData.price,
             category: formData.category,
-            description: formData.chef || 'N/A', // Use chef as description for now
+            description: formData.description || '',
         });
 
         if (!validation.valid) {
             setFormErrors(validation.errors);
-            showNotification('error', 'Please fix the errors below');
+            showNotification('error', 'الرجاء تصحيح الأخطاء');
             return;
         }
 
@@ -84,7 +91,7 @@ export const AdminMeals: React.FC<AdminMealsProps> = ({ meals, chefs, onAdd, onE
         setFormErrors({});
 
         try {
-            let imageUrl = formData.img;
+            let imageUrl = formData.image_url;
 
             // Upload image if changed
             if (imageRef.current?.files?.[0]) {
@@ -98,49 +105,59 @@ export const AdminMeals: React.FC<AdminMealsProps> = ({ meals, chefs, onAdd, onE
             }
 
             const mealData = {
-                ...formData,
+                name: formData.name,
+                description: formData.description || null,
                 price: Number(formData.price),
-                img: imageUrl,
+                category: formData.category,
+                chef_id: formData.chef_id || null,
+                image_url: imageUrl || null,
+                is_available: true,
+                is_featured: false,
+                is_offer: false
             };
 
             if (currentMeal) {
                 // Update existing meal in database
-                const { error } = await supabase
+                const { data, error } = await supabase
                     .from('products')
                     .update(mealData)
-                    .eq('id', currentMeal.id);
+                    .eq('id', currentMeal.id)
+                    .select()
+                    .single();
 
                 if (error) throw error;
-                onEdit({ ...currentMeal, ...mealData });
-                showNotification('success', 'Meal updated successfully! ✅');
+                if (data) {
+                    const updatedMeal: MenuItem = { ...data };
+                    onEdit(updatedMeal);
+                }
+                showNotification('success', 'تم تحديث الوجبة بنجاح! ✅');
             } else {
                 // Add new meal to database
-                const newMeal = {
-                    ...mealData,
-                    id: Date.now(),
-                    rating: 5.0,
-                };
-
-                const { error } = await supabase
+                const { data, error } = await supabase
                     .from('products')
-                    .insert([newMeal]);
+                    .insert([mealData])
+                    .select()
+                    .single();
 
                 if (error) throw error;
-                onAdd(newMeal);
-                showNotification('success', 'Meal added successfully! ✅');
+                if (data) {
+                    const newMeal: MenuItem = { ...data };
+                    onAdd(newMeal);
+                }
+                showNotification('success', 'تم إضافة الوجبة بنجاح! ✅');
             }
 
             setIsModalOpen(false);
             clearForm();
         } catch (error) {
             console.error('Error saving meal:', error);
-            showNotification('error', `Error: ${error instanceof Error ? error.message : 'Failed to save meal'}`);
+            showNotification('error', `خطأ: ${error instanceof Error ? error.message : 'فشل حفظ الوجبة'}`);
         } finally {
             setIsLoading(false);
         }
     };
 
-    const handleDelete = async (id: number) => {
+    const handleDelete = async (id: string) => {
         try {
             setIsLoading(true);
             const { error } = await supabase
@@ -151,7 +168,7 @@ export const AdminMeals: React.FC<AdminMealsProps> = ({ meals, chefs, onAdd, onE
             if (error) throw error;
             onDelete(id);
             setDeleteConfirm(null);
-            showNotification('success', 'Meal deleted successfully! 🗑️');
+            showNotification('success', 'تم حذف الوجبة بنجاح! 🗑️');
         } catch (error) {
             console.error('Error deleting meal:', error);
             showNotification('error', `Error: ${error instanceof Error ? error.message : 'Failed to delete meal'}`);
@@ -212,21 +229,23 @@ export const AdminMeals: React.FC<AdminMealsProps> = ({ meals, chefs, onAdd, onE
                             <th className="p-4 text-gray-700 font-bold">السعر</th>
                             <th className="p-4 text-gray-700 font-bold">القسم</th>
                             <th className="p-4 text-gray-700 font-bold">الشيف</th>
-                            <th className="p-4 text-gray-700 font-bold">الوقت</th>
+                            <th className="p-4 text-gray-700 font-bold">الوصف</th>
                             <th className="p-4 text-gray-700 font-bold">إجراءات</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100 text-gray-800">
-                        {meals.map(meal => (
+                        {meals.map(meal => {
+                            const chef = chefs.find(c => c.id === meal.chef_id);
+                            return (
                             <tr key={meal.id} className="hover:bg-gray-50">
                                 <td className="p-4">
-                                    <img src={meal.img} alt={meal.name} className="w-12 h-12 rounded-lg object-cover" />
+                                    <img src={meal.image_url || '/placeholder.jpg'} alt={meal.name} className="w-12 h-12 rounded-lg object-cover" />
                                 </td>
                                 <td className="p-4 font-bold">{meal.name}</td>
                                 <td className="p-4 text-[#8B2525] font-bold">{meal.price} ج.م</td>
                                 <td className="p-4 text-sm text-gray-600">{meal.category}</td>
-                                <td className="p-4 text-sm text-gray-600">{meal.chef}</td>
-                                <td className="p-4 text-sm text-gray-600">{meal.time}</td>
+                                <td className="p-4 text-sm text-gray-600">{chef?.chef_name || '-'}</td>
+                                <td className="p-4 text-sm text-gray-600">{meal.description || '-'}</td>
                                 <td className="p-4 flex gap-2">
                                     <button onClick={() => openEdit(meal)} title="Edit meal" className="text-blue-500 bg-blue-50 p-2 rounded-lg hover:bg-blue-100 transition"><i className="fa-solid fa-pen"></i></button>
                                     <button 
@@ -242,7 +261,8 @@ export const AdminMeals: React.FC<AdminMealsProps> = ({ meals, chefs, onAdd, onE
                                     </button>
                                 </td>
                             </tr>
-                        ))}
+                        );
+                        })}
                     </tbody>
                 </table>
             </div>
@@ -262,9 +282,9 @@ export const AdminMeals: React.FC<AdminMealsProps> = ({ meals, chefs, onAdd, onE
                             title="Select meal image"
                             className="flex-1 p-3 bg-gray-50 rounded-xl border border-gray-200 text-gray-900 text-sm"
                         />
-                        {(imagePreview || formData.img) && (
+                        {(imagePreview || formData.image_url) && (
                             <img
-                                src={imagePreview || formData.img}
+                                src={imagePreview || formData.image_url}
                                 alt="Meal preview"
                                 className="w-12 h-12 rounded-lg object-cover border-2 border-gray-300"
                             />
@@ -321,27 +341,25 @@ export const AdminMeals: React.FC<AdminMealsProps> = ({ meals, chefs, onAdd, onE
                     <select
                         title="Select chef"
                         className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 text-gray-900"
-                        value={formData.chef}
-                        onChange={e => setFormData({...formData, chef: e.target.value})}
+                        value={formData.chef_id}
+                        onChange={e => setFormData({...formData, chef_id: e.target.value})}
                         disabled={isLoading}
                         required
                     >
                         <option value="" disabled>اختر الشيف</option>
                         {chefs.map(chef => (
-                            <option key={chef.id} value={chef.name}>{chef.name}</option>
+                            <option key={chef.id} value={chef.id}>{chef.chef_name}</option>
                         ))}
                     </select>
                 </div>
 
-                {/* Preparation Time */}
-                <input
-                    type="text"
-                    placeholder="وقت التحضير (مثال: 45 د)"
-                    className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 text-gray-900"
-                    value={formData.time}
-                    onChange={e => setFormData({...formData, time: e.target.value})}
+                {/* Description */}
+                <textarea
+                    placeholder="وصف الوجبة (اختياري)"
+                    className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 text-gray-900 h-20"
+                    value={formData.description}
+                    onChange={e => setFormData({...formData, description: e.target.value})}
                     disabled={isLoading}
-                    required
                 />
 
                 {/* Submit Button */}

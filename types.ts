@@ -1,102 +1,243 @@
+/**
+ * Ghadwa Application Types
+ * 
+ * These interfaces match the Supabase database schema exactly.
+ * See DATABASE_SCHEMA.md for full documentation.
+ * 
+ * IMPORTANT: All IDs are UUIDs (strings), not numbers.
+ */
 
-export interface Review {
-    id: number;
-    itemId: number;
-    rating: number;
-    comment: string;
-    date: string;
-    customerName: string;
+// ============================================
+// DATABASE TYPES (match Supabase schema exactly)
+// ============================================
+
+/**
+ * User profile from profiles table
+ * NOTE: Database has whatsapp_number (required), email/phone (added by migration)
+ */
+export interface Profile {
+  id: string;           // UUID, references auth.users
+  full_name: string;
+  whatsapp_number: string;
+  delivery_address?: string;
+  role: 'admin' | 'chef' | 'customer';
+  is_active?: boolean;
+  avatar_url?: string;
+  email?: string;       // Added by migration
+  phone?: string;       // Added by migration
+  created_at?: string;
+  updated_at?: string;
 }
 
+/**
+ * Chef from chefs table
+ */
 export interface Chef {
-    id: number;
-    name: string;
-    specialty: string;
-    rating: number;
-    reviews: number;
-    orders: string;
-    img: string;
-    bio: string;
-    cover: string;
-    isOpen: boolean;
-    workingHours: string;
-    deliveryTime: string;
-    badges: string[];
+  id: string;           // UUID
+  profile_id?: string;  // UUID
+  chef_name: string;
+  specialty?: string;
+  description?: string;
+  image_url?: string;
+  rating: number;
+  is_active: boolean;
+  created_at?: string;
+  updated_at?: string;
 }
 
-export interface MenuItem {
-    id: number;
-    name: string;
-    price: number;
-    category?: string;
-    categoryId?: string;
-    chef?: string;
-    img: string;
-    rating?: number;
-    time?: string;
-    desc?: string;
-    oldPrice?: number;
-    discount?: string;
-    chefImg?: string;
-    orderCount?: number;
-    reviewsList?: Review[]; // New field for storing reviews
-    expiryDate?: string; // New field for offer expiration
+/**
+ * Product/MenuItem from products table
+ * NOTE: Database has both title/name, is_active/is_available, preparation_time/prep_time (synced by migration)
+ */
+export interface Product {
+  id: string;           // UUID
+  chef_id?: string;     // UUID
+  name: string;
+  description?: string;
+  price: number;
+  image_url?: string;
+  category?: string;
+  is_available: boolean;
+  is_featured: boolean;
+  is_offer: boolean;
+  offer_price?: number;
+  prep_time?: number;
+  stock_quantity?: number;
+  created_at?: string;
+  updated_at?: string;
 }
 
-export interface CartItem extends MenuItem {
-    quantity: number;
-}
-
+/**
+ * Order from orders table
+ */
 export interface Order {
-    id: number;
-    customer: string;
-    phone: string;
-    address: string;
-    date: string;
-    total: number;
-    status: string; // 'pending' | 'cooking' | 'out_for_delivery' | 'delivered'
-    items: string;
-    itemsDetails: CartItem[];
+  id: string;           // UUID
+  customer_id?: string; // UUID
+  chef_id?: string;     // UUID
+  status: 'pending' | 'confirmed' | 'preparing' | 'ready' | 'delivering' | 'delivered' | 'cancelled';
+  total_amount: number;
+  delivery_address?: string;
+  delivery_phone?: string;
+  customer_name?: string;
+  notes?: string;
+  promo_code?: string;
+  discount_amount: number;
+  created_at?: string;
+  updated_at?: string;
+  items?: OrderItem[];  // Joined from order_items
 }
 
+/**
+ * Order item from order_items table
+ */
+export interface OrderItem {
+  id: string;           // UUID
+  order_id: string;     // UUID
+  product_id?: string;  // UUID
+  product_name: string;
+  quantity: number;
+  unit_price: number;
+  total_price: number;
+  notes?: string;
+  created_at?: string;
+}
+
+/**
+ * Box from boxes table
+ * NOTE: boxes.id is BIGINT (number), not UUID!
+ * Contains both legacy fields (img, items, chef, serves) and new migration fields
+ */
 export interface Box {
-    id: number;
-    name: string;
-    category?: string;
-    categoryId?: string;
-    price: number;
-    chef: string;
-    serves: string;
-    items: string[];
-    img: string;
-    color?: string;
-    accent?: string;
-    badge?: string;
+  id: number;           // BIGINT (not UUID - actual DB uses numeric IDs)
+  name: string;
+  price: number;
+  
+  // Legacy fields (original schema)
+  serves?: string;
+  chef?: string;
+  items?: string[];     // ARRAY type in database
+  img?: string;
+  color?: string;
+  accent?: string;
+  badge?: string;
+  category?: string;
+  
+  // New migration fields
+  description?: string;
+  image_url?: string;
+  items_count?: number;
+  is_active?: boolean;
+  
+  created_at?: string;
+  updated_at?: string;
 }
 
+/**
+ * Promo code from promo_codes table
+ */
 export interface PromoCode {
-    id: number;
-    code: string;
-    value: number; // Discount amount or percentage
-    type: 'percentage' | 'fixed'; // Type of discount
-    createdAt?: string;
+  id: string;           // UUID
+  code: string;
+  discount_type: 'percentage' | 'fixed';
+  discount_value: number;
+  min_order_amount: number;
+  max_uses?: number;
+  current_uses: number;
+  valid_from?: string;
+  valid_until?: string;
+  is_active: boolean;
+  created_at?: string;
 }
 
-export interface CheckoutForm {
-    name: string;
-    phone: string;
-    address: string;
-    notes: string;
-    promoCode?: string;
-    discountApplied?: number;
-}
-
+/**
+ * Contact settings from contact_settings table
+ */
 export interface ContactSettings {
-    phone: string;
-    whatsapp: string;
-    email: string;
-    address: string;
-    facebookUrl: string;
-    instagramUrl: string;
-    tiktokUrl: string;
+  id?: string;          // UUID
+  phone?: string;
+  email?: string;
+  address?: string;
+  whatsapp?: string;
+  instagram?: string;
+  facebook?: string;
+  working_hours?: string;
+  updated_at?: string;
+}
+
+// ============================================
+// UI/FRONTEND TYPES (for cart, checkout, etc.)
+// ============================================
+
+/**
+ * Cart item extends Product with quantity
+ */
+export interface CartItem extends Product {
+  quantity: number;
+}
+
+/**
+ * Checkout form data
+ */
+export interface CheckoutForm {
+  name: string;
+  phone: string;
+  address: string;
+  notes: string;
+  promoCode?: string;
+  discountApplied?: number;
+}
+
+/**
+ * Review (can be stored in separate table or as JSON)
+ */
+export interface Review {
+  id: string;
+  product_id: string;
+  customer_id?: string;
+  rating: number;
+  comment: string;
+  customer_name: string;
+  created_at: string;
+}
+
+// ============================================
+// LEGACY TYPES (for backward compatibility)
+// These map old field names to new database columns
+// ============================================
+
+/**
+ * @deprecated Use Product instead
+ * MenuItem is an alias for Product for backward compatibility
+ */
+export type MenuItem = Product;
+
+// ============================================
+// HELPER TYPES
+// ============================================
+
+/**
+ * API response wrapper
+ */
+export interface ApiResponse<T> {
+  data: T | null;
+  error: string | null;
+  success: boolean;
+}
+
+/**
+ * Pagination info
+ */
+export interface PaginationInfo {
+  page: number;
+  pageSize: number;
+  totalCount: number;
+  totalPages: number;
+}
+
+/**
+ * Data loading state
+ */
+export interface LoadingState {
+  isLoading: boolean;
+  error: string | null;
 }

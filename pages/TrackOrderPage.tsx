@@ -106,8 +106,8 @@ export const TrackOrderPage: React.FC<TrackOrderPageProps> = ({ orders, initialO
                                                         #{order.id}
                                                     </div>
                                                     <div>
-                                                        <p className="font-bold text-gray-900 mb-1 line-clamp-1">{order.items}</p>
-                                                        <p className="text-xs text-gray-500">{order.date}</p>
+                                                        <p className="font-bold text-gray-900 mb-1 line-clamp-1">{order.total_amount} ج.م</p>
+                                                        <p className="text-xs text-gray-500">{new Date(order.created_at).toLocaleDateString('ar-EG')}</p>
                                                     </div>
                                                 </div>
                                                 <div className="text-left">
@@ -121,7 +121,7 @@ export const TrackOrderPage: React.FC<TrackOrderPageProps> = ({ orders, initialO
                                                          order.status === 'out_for_delivery' ? 'مع الطيار' :
                                                          order.status === 'cooking' ? 'جاري التحضير' : 'قيد الانتظار'}
                                                     </span>
-                                                    <span className="font-bold text-[#8B2525] text-sm">{order.total} ج.م</span>
+                                                    <span className="font-bold text-[#8B2525] text-sm">{order.total_amount} ج.م</span>
                                                 </div>
                                             </div>
                                             
@@ -226,15 +226,19 @@ export const TrackOrderPage: React.FC<TrackOrderPageProps> = ({ orders, initialO
                                     <div className="space-y-2 mb-4">
                                         <div className="flex justify-between text-sm">
                                             <span className="text-gray-600">العميل:</span>
-                                            <span className="font-bold">{foundOrder.customer}</span>
+                                            <span className="font-bold">{foundOrder.customer_name}</span>
                                         </div>
                                         <div className="flex justify-between text-sm">
                                             <span className="text-gray-600">العنوان:</span>
-                                            <span className="font-bold">{foundOrder.address}</span>
+                                            <span className="font-bold">{foundOrder.delivery_address}</span>
+                                        </div>
+                                        <div className="flex justify-between text-sm">
+                                            <span className="text-gray-600">رقم التليفون:</span>
+                                            <span className="font-bold" dir="ltr">{foundOrder.delivery_phone}</span>
                                         </div>
                                         <div className="flex justify-between text-sm">
                                             <span className="text-gray-600">التاريخ:</span>
-                                            <span className="font-bold">{foundOrder.date}</span>
+                                            <span className="font-bold">{new Date(foundOrder.created_at).toLocaleDateString('ar-EG')}</span>
                                         </div>
                                     </div>
                                     <div className="bg-white p-4 rounded-lg border border-gray-100">
@@ -258,7 +262,7 @@ export const TrackOrderPage: React.FC<TrackOrderPageProps> = ({ orders, initialO
                                                 </div>
                                             ))}
                                             {!foundOrder.itemsDetails && <p className="font-bold text-gray-900 text-sm leading-relaxed">{foundOrder.items}</p>}
-                                        </div>
+                                        </div>_amount
                                         
                                         <div className="mt-3 pt-3 border-t border-dashed border-gray-200 flex justify-between items-center">
                                             <span className="font-bold text-gray-900">الإجمالي</span>

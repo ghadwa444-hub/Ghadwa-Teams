@@ -1,5 +1,5 @@
 
-import { Chef, MenuItem, Order, Box, PromoCode, ContactSettings, Review } from '../types';
+import { Chef, Product, Order, Box, PromoCode, ContactSettings } from '../types';
 import { logger } from '../utils/logger';
 import { supabaseDataService } from './supabase.data.service';
 import { freeNotificationService } from './notifications/freeNotificationService';
@@ -49,181 +49,107 @@ function saveDB<T>(key: string, data: T): void {
 
 export const api = {
     // --- Fetch Data (READ) ---
-    getChefs: async () => {
+    getChefs: async (): Promise<Chef[]> => {
         logger.debug('API_CHEFS', '🔄 Fetching chefs from Supabase...');
         try {
-            const supabaseChefs = await supabaseDataService.getChefs();
-            logger.info('API_CHEFS', `✅ Fetched ${supabaseChefs.length} chefs from Supabase`, { count: supabaseChefs.length });
-            
-            // Map Supabase chefs to app Chef type
-            const data: Chef[] = supabaseChefs.map(chef => ({
-                id: parseInt(chef.id.substring(0, 8), 16), // Convert UUID to number for compatibility
-                name: chef.chef_name,
-                specialty: chef.specialty,
-                description: chef.description || '',
-                image: chef.image_url || 'https://images.unsplash.com/photo-1577219491135-ce391730fb2c',
-                rating: chef.rating || 0,
-                reviews: Math.floor(Math.random() * 100) + 20, // Placeholder
-                dishes: [] // Will be populated from products
-            }));
-            
-            return data;
+            const chefs = await supabaseDataService.getChefs();
+            logger.info('API_CHEFS', `✅ Fetched ${chefs.length} chefs from Supabase`, { count: chefs.length });
+            return chefs as Chef[];
         } catch (error) {
-            logger.error('API_CHEFS', '❌ Error fetching chefs from Supabase, falling back to localStorage', error);
-            // Fallback to localStorage if Supabase fails
-            const data = getDB<Chef[]>(KEYS.CHEFS, []);
-            return data;
+            logger.error('API_CHEFS', '❌ Error fetching chefs from Supabase', error);
+            return [];
         }
     },
-    getOrders: async () => {
+    getOrders: async (): Promise<Order[]> => {
         logger.debug('API_ORDERS', '🔄 Fetching orders from Supabase...');
         try {
-            const supabaseOrders = await supabaseDataService.getOrders();
-            logger.info('API_ORDERS', `✅ Fetched ${supabaseOrders.length} orders from Supabase`, { count: supabaseOrders.length });
-            
-            // Map Supabase orders to app Order type
-            const data: Order[] = supabaseOrders.map(order => ({
-                id: parseInt(order.id.substring(0, 8), 16),
-                customer: order.customer_name,
-                phone: order.customer_phone,
-                address: order.delivery_address || '',
-                items: [], // Will be populated from order_items if needed
-                total: parseFloat(order.total_amount),
-                status: order.status,
-                date: order.created_at || new Date().toISOString(),
-                payment: order.payment_method || 'cash'
-            }));
-            
-            return data;
+            const orders = await supabaseDataService.getOrders();
+            logger.info('API_ORDERS', `✅ Fetched ${orders.length} orders from Supabase`, { count: orders.length });
+            return orders as Order[];
         } catch (error) {
-            logger.error('API_ORDERS', '❌ Error fetching orders from Supabase, falling back', error);
-            const data = getDB<Order[]>(KEYS.ORDERS, []);
-            return data;
+            logger.error('API_ORDERS', '❌ Error fetching orders from Supabase', error);
+            return [];
         }
     },
-    getMenuItems: async () => {
+    getMenuItems: async (): Promise<Product[]> => {
         logger.debug('API_MENU', '🔄 Fetching menu items from Supabase...');
         try {
             const products = await supabaseDataService.getProducts();
             logger.info('API_MENU', `✅ Fetched ${products.length} menu items from Supabase`, { count: products.length });
-            
-            // Map Supabase products to MenuItem type
-            const data: MenuItem[] = products.map(product => ({
-                id: parseInt(product.id.substring(0, 8), 16),
-                chefId: parseInt(product.chef_id.substring(0, 8), 16),
-                title: product.title,
-                description: product.description || '',
-                price: parseFloat(product.price),
-                category: product.category as 'main' | 'side' | 'dessert' | 'drink',
-                image: product.image_url || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c',
-                rating: product.rating || 0,
-                reviewsList: [] // TODO: Implement reviews if needed
-            }));
-            
-            return data;
+            return products as Product[];
         } catch (error) {
-            logger.error('API_MENU', '❌ Error fetching menu items from Supabase, falling back', error);
-            const data = getDB<MenuItem[]>(KEYS.MENU, []);
-            return data;
+            logger.error('API_MENU', '❌ Error fetching menu items from Supabase', error);
+            return [];
         }
     },
-    getOffers: async () => {
+    getOffers: async (): Promise<Product[]> => {
         logger.debug('API_OFFERS', '🔄 Fetching offers from Supabase...');
         try {
-            // Offers are products with special pricing or featured status
-            // For now, return same as menu items (can filter by discount/featured flag later)
             const products = await supabaseDataService.getProducts();
-            const data: MenuItem[] = products
-                .filter(p => p.is_available)
-                .slice(0, 6) // Limit to 6 offers
-                .map(product => ({
-                    id: parseInt(product.id.substring(0, 8), 16),
-                    chefId: parseInt(product.chef_id.substring(0, 8), 16),
-                    title: product.title,
-                    description: product.description || '',
-                    price: parseFloat(product.price),
-                    category: product.category as 'main' | 'side' | 'dessert' | 'drink',
-                    image: product.image_url || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c',
-                    rating: product.rating || 0,
-                    reviewsList: []
-                }));
-            logger.info('API_OFFERS', `✅ Fetched ${data.length} offers from Supabase`, { count: data.length });
-            return data;
+            // Filter products that are offers
+            const offers = products.filter(p => p.is_offer === true);
+            logger.info('API_OFFERS', `✅ Fetched ${offers.length} offers from Supabase`, { count: offers.length });
+            return offers as Product[];
         } catch (error) {
-            logger.error('API_OFFERS', '❌ Error fetching offers, falling back', error);
-            return getDB<MenuItem[]>(KEYS.OFFERS, []);
+            logger.error('API_OFFERS', '❌ Error fetching offers', error);
+            return [];
         }
     },
-    getBoxes: async () => {
+    getBoxes: async (): Promise<Box[]> => {
         logger.debug('API_BOXES', '🔄 Fetching boxes from Supabase...');
         try {
             const data = await supabaseDataService.getBoxes();
             logger.info('API_BOXES', `✅ Fetched ${data.length} boxes from Supabase`, { count: data.length });
-            return data;
+            return data as Box[];
         } catch (error) {
-            logger.error('API_BOXES', '❌ Error fetching boxes, falling back to empty array', error);
+            logger.error('API_BOXES', '❌ Error fetching boxes', error);
             return [];
         }
     },
-    getBestSellers: async () => {
+    getBestSellers: async (): Promise<Product[]> => {
         logger.debug('API_BESTSELLERS', '🔄 Fetching best sellers from Supabase...');
         try {
             const products = await supabaseDataService.getProducts();
-            // Sort by rating and take top items
-            const data: MenuItem[] = products
-                .filter(p => p.is_available)
-                .sort((a, b) => (b.rating || 0) - (a.rating || 0))
-                .slice(0, 8)
-                .map(product => ({
-                    id: parseInt(product.id.substring(0, 8), 16),
-                    chefId: parseInt(product.chef_id.substring(0, 8), 16),
-                    title: product.title,
-                    description: product.description || '',
-                    price: parseFloat(product.price),
-                    category: product.category as 'main' | 'side' | 'dessert' | 'drink',
-                    image: product.image_url || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c',
-                    rating: product.rating || 0,
-                    reviewsList: []
-                }));
-            logger.info('API_BESTSELLERS', `✅ Fetched ${data.length} best sellers from Supabase`, { count: data.length });
-            return data;
+            // Filter products that are featured
+            const bestSellers = products.filter(p => p.is_featured === true);
+            logger.info('API_BESTSELLERS', `✅ Fetched ${bestSellers.length} best sellers from Supabase`, { count: bestSellers.length });
+            return bestSellers as Product[];
         } catch (error) {
-            logger.error('API_BESTSELLERS', '❌ Error fetching best sellers, falling back', error);
-            return getDB<MenuItem[]>(KEYS.BEST_SELLERS, []);
+            logger.error('API_BESTSELLERS', '❌ Error fetching best sellers', error);
+            return [];
         }
     },
-    getPromoCodes: async () => {
+    getPromoCodes: async (): Promise<PromoCode[]> => {
         logger.debug('API_PROMOS', '🔄 Fetching promo codes from API...');
         await delay(500);
         const data = getDB<PromoCode[]>(KEYS.PROMOS, []);
         logger.info('API_PROMOS', `✅ Fetched ${data.length} promo codes`, { count: data.length });
         return data;
     },
-    getContactSettings: async () => {
+    getContactSettings: async (): Promise<ContactSettings> => {
         logger.debug('API_SETTINGS', '🔄 Fetching contact settings from Supabase...');
         try {
             const settings = await supabaseDataService.getSettings();
             const data: ContactSettings = {
-                phone: settings.find(s => s.key === 'contact_phone')?.value || '+201109318581',
-                email: settings.find(s => s.key === 'contact_email')?.value || 'ghadwa444@gmail.com',
-                address: settings.find(s => s.key === 'contact_address')?.value || 'طنطا، مصر',
-                facebook: settings.find(s => s.key === 'social_facebook')?.value || '#',
-                instagram: settings.find(s => s.key === 'social_instagram')?.value || '#',
-                twitter: settings.find(s => s.key === 'social_twitter')?.value || '#'
+                phone: settings.find(s => s.key === 'contact_phone')?.value || '',
+                email: settings.find(s => s.key === 'contact_email')?.value || '',
+                address: settings.find(s => s.key === 'contact_address')?.value || '',
+                whatsapp: settings.find(s => s.key === 'contact_whatsapp')?.value || '',
+                facebook: settings.find(s => s.key === 'social_facebook')?.value || '',
+                instagram: settings.find(s => s.key === 'social_instagram')?.value || '',
             };
             logger.info('API_SETTINGS', '✅ Fetched contact settings from Supabase');
             return data;
         } catch (error) {
             logger.error('API_SETTINGS', '❌ Error fetching settings, falling back', error);
-            return getDB<ContactSettings>(KEYS.SETTINGS, {
+            return {
                 phone: '',
-                whatsapp: '',
                 email: '',
                 address: '',
-                facebookUrl: '',
-                instagramUrl: '',
-                tiktokUrl: ''
-            });
+                whatsapp: '',
+                facebook: '',
+                instagram: '',
+            };
         }
     },
     
@@ -330,133 +256,105 @@ export const api = {
     },
 
     // --- Chefs ---
-    addChef: async (chef: Chef) => {
-        logger.info('API_CHEFS', '➕ Adding new chef to Supabase', { chefName: chef.name, specialty: chef.specialty });
+    addChef: async (chef: Chef): Promise<boolean> => {
+        logger.info('API_CHEFS', '➕ Adding new chef to Supabase', { chefName: chef.chef_name, specialty: chef.specialty });
         try {
             await supabaseDataService.createChef({
-                chef_name: chef.name,
-                specialty: chef.specialty,
-                description: chef.description,
-                image_url: chef.image,
-                rating: chef.rating || 4.5,
-                is_active: true
+                chef_name: chef.chef_name,
+                specialty: chef.specialty || null,
+                description: chef.description || null,
+                image_url: chef.image_url || null,
+                rating: chef.rating || 5.0,
+                is_active: chef.is_active ?? true
             });
-            logger.info('API_CHEFS', '✅ Chef added successfully to Supabase', { chefName: chef.name });
+            logger.info('API_CHEFS', '✅ Chef added successfully to Supabase', { chefName: chef.chef_name });
             return true;
         } catch (error) {
             logger.error('API_CHEFS', '❌ Error adding chef to Supabase', error);
             return false;
         }
     },
-    updateChef: async (chef: Chef) => {
-        logger.info('API_CHEFS', '✏️ Updating chef in Supabase', { chefId: chef.id, chefName: chef.name });
+    updateChef: async (chef: Chef): Promise<boolean> => {
+        logger.info('API_CHEFS', '✏️ Updating chef in Supabase', { chefId: chef.id, chefName: chef.chef_name });
         try {
-            // Find chef UUID from number ID (this is a limitation - we need to store mapping)
-            // For now, fetch all chefs and find match by name
-            const chefs = await supabaseDataService.getChefs();
-            const targetChef = chefs.find(c => c.chef_name === chef.name);
-            
-            if (targetChef) {
-                await supabaseDataService.updateChef(targetChef.id, {
-                    chef_name: chef.name,
-                    specialty: chef.specialty,
-                    description: chef.description,
-                    image_url: chef.image,
-                    rating: chef.rating
-                });
-                logger.info('API_CHEFS', '✅ Chef updated successfully in Supabase', { chefName: chef.name });
-                return true;
-            }
-            logger.warn('API_CHEFS', '⚠️ Chef not found in Supabase', { chefName: chef.name });
-            return false;
+            await supabaseDataService.updateChef(chef.id, {
+                chef_name: chef.chef_name,
+                specialty: chef.specialty || null,
+                description: chef.description || null,
+                image_url: chef.image_url || null,
+                rating: chef.rating,
+                is_active: chef.is_active
+            });
+            logger.info('API_CHEFS', '✅ Chef updated successfully in Supabase', { chefName: chef.chef_name });
+            return true;
         } catch (error) {
             logger.error('API_CHEFS', '❌ Error updating chef in Supabase', error);
             return false;
         }
     },
-    deleteChef: async (id: number) => {
+    deleteChef: async (id: string): Promise<boolean> => {
         logger.warn('API_CHEFS', '🗑️ Deleting chef from Supabase', { chefId: id });
         try {
-            // Similar limitation - need to find UUID from number ID
-            const chefs = await supabaseDataService.getChefs();
-            const targetChef = chefs.find(c => parseInt(c.id.substring(0, 8), 16) === id);
-            
-            if (targetChef) {
-                await supabaseDataService.deleteChef(targetChef.id);
-                logger.info('API_CHEFS', '✅ Chef deleted from Supabase');
-                return true;
-            }
-            return false;
+            await supabaseDataService.deleteChef(id);
+            logger.info('API_CHEFS', '✅ Chef deleted from Supabase');
+            return true;
         } catch (error) {
             logger.error('API_CHEFS', '❌ Error deleting chef from Supabase', error);
             return false;
         }
     },
 
-    // --- Menu Items ---
-    addMenuItem: async (item: MenuItem) => {
-        logger.info('API_MENU', '➕ Adding menu item to Supabase', { title: item.title });
+    // --- Menu Items / Products ---
+    addMenuItem: async (item: Product): Promise<boolean> => {
+        logger.info('API_MENU', '➕ Adding menu item to Supabase', { name: item.name });
         try {
-            // Find chef UUID from chefId
-            const chefs = await supabaseDataService.getChefs();
-            const chef = chefs.find(c => parseInt(c.id.substring(0, 8), 16) === item.chefId);
-            
-            if (!chef) {
-                logger.error('API_MENU', '❌ Chef not found', { chefId: item.chefId });
-                return false;
-            }
-            
             await supabaseDataService.createProduct({
-                chef_id: chef.id,
-                title: item.title,
-                description: item.description,
+                chef_id: item.chef_id || null,
+                name: item.name,
+                description: item.description || null,
                 price: item.price.toString(),
-                category: item.category,
-                image_url: item.image,
-                stock_quantity: 100,
-                is_available: true
+                image_url: item.image_url || null,
+                category: item.category || null,
+                is_available: item.is_available ?? true,
+                is_featured: item.is_featured ?? false,
+                is_offer: item.is_offer ?? false,
+                offer_price: item.offer_price?.toString() || null,
+                prep_time: item.prep_time || null
             });
-            logger.info('API_MENU', '✅ Menu item added to Supabase', { title: item.title });
+            logger.info('API_MENU', '✅ Menu item added to Supabase', { name: item.name });
             return true;
         } catch (error) {
             logger.error('API_MENU', '❌ Error adding menu item', error);
             return false;
         }
     },
-    updateMenuItem: async (item: MenuItem) => {
-        logger.info('API_MENU', '✏️ Updating menu item in Supabase', { title: item.title });
+    updateMenuItem: async (item: Product): Promise<boolean> => {
+        logger.info('API_MENU', '✏️ Updating menu item in Supabase', { name: item.name });
         try {
-            const products = await supabaseDataService.getProducts();
-            const product = products.find(p => p.title === item.title);
-            
-            if (!product) {
-                logger.warn('API_MENU', '⚠️ Product not found', { title: item.title });
-                return false;
-            }
-            
-            await supabaseDataService.updateProduct(product.id, {
-                title: item.title,
-                description: item.description,
+            await supabaseDataService.updateProduct(item.id, {
+                chef_id: item.chef_id || null,
+                name: item.name,
+                description: item.description || null,
                 price: item.price.toString(),
-                category: item.category,
-                image_url: item.image
+                image_url: item.image_url || null,
+                category: item.category || null,
+                is_available: item.is_available ?? true,
+                is_featured: item.is_featured ?? false,
+                is_offer: item.is_offer ?? false,
+                offer_price: item.offer_price?.toString() || null,
+                prep_time: item.prep_time || null
             });
-            logger.info('API_MENU', '✅ Menu item updated in Supabase', { title: item.title });
+            logger.info('API_MENU', '✅ Menu item updated in Supabase', { name: item.name });
             return true;
         } catch (error) {
             logger.error('API_MENU', '❌ Error updating menu item', error);
             return false;
         }
     },
-    deleteMenuItem: async (id: number) => {
+    deleteMenuItem: async (id: string): Promise<boolean> => {
         logger.warn('API_MENU', '🗑️ Deleting menu item from Supabase', { itemId: id });
         try {
-            const products = await supabaseDataService.getProducts();
-            const product = products.find(p => parseInt(p.id.substring(0, 8), 16) === id);
-            
-            if (!product) return false;
-            
-            await supabaseDataService.deleteProduct(product.id);
+            await supabaseDataService.deleteProduct(id);
             logger.info('API_MENU', '✅ Menu item deleted from Supabase');
             return true;
         } catch (error) {
@@ -465,126 +363,83 @@ export const api = {
         }
     },
     
-    // --- Reviews ---
-    addReview: async (review: Review): Promise<boolean> => {
-        logger.info('API_REVIEWS', '⭐ Adding review to Supabase', { itemId: review.itemId });
+    // --- Boxes ---
+    addBox: async (box: Box): Promise<boolean> => {
+        logger.info('API_BOXES', '➕ Adding box to Supabase', { name: box.name });
         try {
-            // Find product by item ID
-            const products = await supabaseDataService.getProducts();
-            const product = products.find(p => parseInt(p.id.substring(0, 8), 16) === review.itemId);
-            
-            if (!product) {
-                logger.warn('API_REVIEWS', '⚠️ Product not found for review', { itemId: review.itemId });
-                return false;
-            }
-            
-            // Calculate new average rating (simplified - real app would store reviews separately)
-            const currentRating = product.rating || 0;
-            const newRating = (currentRating + review.rating) / 2; // Simplified average
-            
-            await supabaseDataService.updateProduct(product.id, {
-                rating: parseFloat(newRating.toFixed(1))
+            await supabaseDataService.createBox({
+                name: box.name,
+                description: box.description || null,
+                price: box.price.toString(),
+                image_url: box.image_url || null,
+                items_count: box.items_count || null,
+                is_active: box.is_active ?? true
             });
-            
-            logger.info('API_REVIEWS', '✅ Review added, product rating updated');
+            logger.info('API_BOXES', '✅ Box added to Supabase', { name: box.name });
             return true;
         } catch (error) {
-            logger.error('API_REVIEWS', '❌ Error adding review', error);
+            logger.error('API_BOXES', '❌ Error adding box', error);
+            return false;
+        }
+    },
+    updateBox: async (box: Box): Promise<boolean> => {
+        logger.info('API_BOXES', '✏️ Updating box in Supabase', { name: box.name });
+        try {
+            await supabaseDataService.updateBox(box.id, {
+                name: box.name,
+                description: box.description || null,
+                price: box.price.toString(),
+                image_url: box.image_url || null,
+                items_count: box.items_count || null,
+                is_active: box.is_active ?? true
+            });
+            logger.info('API_BOXES', '✅ Box updated in Supabase', { name: box.name });
+            return true;
+        } catch (error) {
+            logger.error('API_BOXES', '❌ Error updating box', error);
+            return false;
+        }
+    },
+    deleteBox: async (id: string): Promise<boolean> => {
+        logger.warn('API_BOXES', '🗑️ Deleting box from Supabase', { boxId: id });
+        try {
+            await supabaseDataService.deleteBox(id);
+            logger.info('API_BOXES', '✅ Box deleted from Supabase');
+            return true;
+        } catch (error) {
+            logger.error('API_BOXES', '❌ Error deleting box', error);
             return false;
         }
     },
 
-    // --- Offers ---
-    // Note: Offers are managed as regular products in Supabase
-    // Use addMenuItem/updateMenuItem/deleteMenuItem instead
-    addOffer: async (item: MenuItem) => {
-        logger.info('API_OFFERS', '➡️ Redirecting to addMenuItem');
-        return api.addMenuItem(item);
-    },
-    updateOffer: async (item: MenuItem) => {
-        logger.info('API_OFFERS', '➡️ Redirecting to updateMenuItem');
-        return api.updateMenuItem(item);
-    },
-    deleteOffer: async (id: number) => {
-        logger.info('API_OFFERS', '➡️ Redirecting to deleteMenuItem');
-        return api.deleteMenuItem(id);
-    },
-
-    // --- Boxes ---
-    // TODO: Boxes not yet implemented in Supabase, using localStorage for now
-    addBox: async (box: Box) => {
-        logger.warn('API_BOXES', '📦 Boxes still using localStorage - not in Supabase yet');
-        await delay(300);
-        const data = getDB<Box[]>(KEYS.BOXES, []);
-        saveDB(KEYS.BOXES, [...data, box]);
+    // --- Promo Codes (localStorage for now) ---
+    addPromoCode: async (promo: PromoCode): Promise<boolean> => {
+        logger.info('API_PROMOS', '➕ Adding promo code', { code: promo.code });
+        const promos = getDB<PromoCode[]>(KEYS.PROMOS, []);
+        promos.push(promo);
+        saveDB(KEYS.PROMOS, promos);
         return true;
     },
-    updateBox: async (box: Box) => {
-        logger.warn('API_BOXES', '📦 Boxes still using localStorage - not in Supabase yet');
-        await delay(300);
-        const data = getDB<Box[]>(KEYS.BOXES, []);
-        saveDB(KEYS.BOXES, data.map(b => b.id === box.id ? box : b));
-        return true;
-    },
-    deleteBox: async (id: number) => {
-        logger.warn('API_BOXES', '📦 Boxes still using localStorage - not in Supabase yet');
-        await delay(300);
-        const data = getDB<Box[]>(KEYS.BOXES, []);
-        saveDB(KEYS.BOXES, data.filter(b => b.id !== id));
+    deletePromoCode: async (id: string): Promise<boolean> => {
+        logger.warn('API_PROMOS', '🗑️ Deleting promo code', { promoId: id });
+        const promos = getDB<PromoCode[]>(KEYS.PROMOS, []);
+        const filtered = promos.filter(p => p.id !== id);
+        saveDB(KEYS.PROMOS, filtered);
         return true;
     },
 
-    // --- Best Sellers ---
-    // Note: Best sellers are auto-calculated from products by rating
-    // Use addMenuItem/updateMenuItem/deleteMenuItem to manage products
-    addBestSeller: async (item: MenuItem) => {
-        logger.info('API_BESTSELLERS', '➡️ Redirecting to addMenuItem');
-        return api.addMenuItem(item);
-    },
-    updateBestSeller: async (item: MenuItem) => {
-        logger.info('API_BESTSELLERS', '➡️ Redirecting to updateMenuItem');
-        return api.updateMenuItem(item);
-    },
-    deleteBestSeller: async (id: number) => {
-        logger.info('API_BESTSELLERS', '➡️ Redirecting to deleteMenuItem');
-        return api.deleteMenuItem(id);
-    },
-
-    // --- Promo Codes ---
-    // TODO: Promo codes not yet implemented in Supabase, using localStorage for now
-    addPromoCode: async (promo: PromoCode) => {
-        logger.warn('API_PROMOS', '🎫 Promo codes still using localStorage - not in Supabase yet');
-        await delay(300);
-        const data = getDB<PromoCode[]>(KEYS.PROMOS, []);
-        saveDB(KEYS.PROMOS, [...data, promo]);
-        return true;
-    },
-    deletePromoCode: async (id: number) => {
-        logger.warn('API_PROMOS', '🎫 Promo codes still using localStorage - not in Supabase yet');
-        await delay(300);
-        const data = getDB<PromoCode[]>(KEYS.PROMOS, []);
-        saveDB(KEYS.PROMOS, data.filter(p => p.id !== id));
-        return true;
-    },
-
-    // --- Settings ---
+    // --- Contact Settings ---
     updateContactSettings: async (settings: ContactSettings): Promise<boolean> => {
-        logger.info('API_SETTINGS', '✏️ Updating contact settings in Supabase');
+        logger.info('API_SETTINGS', '✏️ Updating contact settings');
         try {
-            const updates = [
-                { key: 'contact_phone', value: settings.phone },
-                { key: 'contact_email', value: settings.email },
-                { key: 'contact_address', value: settings.address },
-                { key: 'social_facebook', value: settings.facebook || '#' },
-                { key: 'social_instagram', value: settings.instagram || '#' },
-                { key: 'social_twitter', value: settings.twitter || '#' }
-            ];
-            
-            for (const update of updates) {
-                await supabaseDataService.updateSetting(update.key, update.value);
-            }
-            
-            logger.info('API_SETTINGS', '✅ Contact settings updated in Supabase');
+            // Update each setting individually
+            await supabaseDataService.updateSetting('contact_phone', settings.phone || '');
+            await supabaseDataService.updateSetting('contact_email', settings.email || '');
+            await supabaseDataService.updateSetting('contact_address', settings.address || '');
+            await supabaseDataService.updateSetting('contact_whatsapp', settings.whatsapp || '');
+            await supabaseDataService.updateSetting('social_facebook', settings.facebook || '');
+            await supabaseDataService.updateSetting('social_instagram', settings.instagram || '');
+            logger.info('API_SETTINGS', '✅ Contact settings updated');
             return true;
         } catch (error) {
             logger.error('API_SETTINGS', '❌ Error updating settings', error);
@@ -592,3 +447,4 @@ export const api = {
         }
     }
 };
+

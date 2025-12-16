@@ -64,7 +64,7 @@ export const WeeklyOffers: React.FC<WeeklyOffersProps> = ({ offers, cart, update
         e.stopPropagation();
         const shareData = {
             title: 'غدوة - أكل بيتي',
-            text: `الحق عرض ${offer.name} من شيف ${offer.chef} بسعر ${offer.price} ج.م! 😋`,
+            text: `الحق عرض ${offer.name} بسعر ${offer.offer_price || offer.price} ج.م! 😋`,
             url: window.location.origin
         };
 
@@ -97,16 +97,16 @@ export const WeeklyOffers: React.FC<WeeklyOffersProps> = ({ offers, cart, update
                 ) : (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                     {offers.map(offer => {
-                         const isOpen = offer.chef ? true : true; // Chef data now comes from props
+                         const isOpen = offer.is_available;
 
                          return (
                         <div key={offer.id} className="flex flex-col bg-white rounded-[2rem] shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100 group overflow-hidden h-full transform hover:-translate-y-1">
                             <div className="h-64 overflow-hidden relative">
-                                <img src={offer.img} alt={offer.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                                <img src={offer.image_url || 'https://via.placeholder.com/400x300?text=Offer'} alt={offer.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
                                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
                                 
                                 <div className="absolute top-4 right-4 bg-red-600 text-white text-sm font-bold px-4 py-2 rounded-xl shadow-lg animate-bounce-slow">
-                                    خصم {offer.discount}
+                                    خصم {((offer.offer_price ? (offer.price - offer.offer_price) : 0) / offer.price * 100).toFixed(0)}%
                                 </div>
                                 
                                 {/* Share Button */}
@@ -121,10 +121,6 @@ export const WeeklyOffers: React.FC<WeeklyOffersProps> = ({ offers, cart, update
                                 </div>
 
                                 <div className="absolute bottom-4 right-4 text-white">
-                                    <div className="flex items-center gap-2 mb-1">
-                                        <img src={offer.chefImg || ""} alt={offer.chef} className="w-8 h-8 rounded-full border-2 border-white" />
-                                        <p className="text-xs font-bold opacity-90">{offer.chef}</p>
-                                    </div>
                                     <h3 className="font-bold text-xl">{offer.name}</h3>
                                 </div>
                             </div>
@@ -133,18 +129,16 @@ export const WeeklyOffers: React.FC<WeeklyOffersProps> = ({ offers, cart, update
                                 <div>
                                     <div className="flex items-center justify-between mb-4">
                                         <div className="flex flex-col">
-                                            <span className="text-gray-400 text-sm line-through decoration-red-400 decoration-2">{offer.oldPrice} ج.م</span>
-                                            <span className="text-[#8B2525] font-black text-4xl">{offer.price} <span className="text-sm font-bold text-gray-500">ج.م</span></span>
+                                            <span className="text-gray-400 text-sm line-through decoration-red-400 decoration-2">{offer.price} ج.م</span>
+                                            <span className="text-[#8B2525] font-black text-4xl">{offer.offer_price || offer.price} <span className="text-sm font-bold text-gray-500">ج.م</span></span>
                                         </div>
                                         <div className="w-14 h-14 rounded-full bg-red-50 flex items-center justify-center text-[#8B2525] text-2xl shadow-sm">
                                             <i className="fa-solid fa-tags"></i>
                                         </div>
                                     </div>
 
-                                    {/* Timer Moved Here */}
-                                    {offer.expiryDate && (
-                                        <CountdownTimer targetDate={offer.expiryDate} />
-                                    )}
+                                    {/* Timer */}
+                                    <CountdownTimer targetDate={offer.updated_at} />
                                 </div>
 
                                 <AddToCartButton item={offer} cart={cart} updateQuantity={updateQuantity} className="h-14 w-full text-lg shadow-md font-black" disabled={!isOpen} />

@@ -41,11 +41,20 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ cart, onBack, onPlac
             return;
         }
 
+        // Check minimum order amount
+        if (code.min_order_amount && subtotal < code.min_order_amount) {
+            setPromoError(`الحد الأدنى للطلب ${code.min_order_amount} ج.م`);
+            setDiscount(0);
+            setAppliedPromo(null);
+            return;
+        }
+
+        // Calculate discount based on discount_type and discount_value
         let calculatedDiscount = 0;
-        if (code.type === 'percentage') {
-            calculatedDiscount = (subtotal * code.value) / 100;
-        } else {
-            calculatedDiscount = code.value;
+        if (code.discount_type === 'percentage') {
+            calculatedDiscount = (subtotal * code.discount_value) / 100;
+        } else if (code.discount_type === 'fixed') {
+            calculatedDiscount = code.discount_value;
         }
 
         // Cap discount at subtotal

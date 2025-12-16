@@ -21,7 +21,7 @@ export const BoxCard: React.FC<BoxCardProps> = ({
       {/* IMAGE SECTION - Responsive Height: 160px (mobile) → 256px (desktop) */}
       <div className="h-40 sm:h-48 md:h-56 lg:h-64 overflow-hidden relative">
         <img
-          src={box.img}
+          src={box.image_url || 'https://via.placeholder.com/400x300?text=Box'}
           alt={box.name}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           loading="lazy"
@@ -30,7 +30,7 @@ export const BoxCard: React.FC<BoxCardProps> = ({
         {/* BADGE - Responsive Position & Size */}
         <div className="absolute top-3 sm:top-4 right-3 sm:right-4">
           <span className="bg-white/90 backdrop-blur-sm text-gray-900 text-xs sm:text-sm font-bold px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg shadow-sm border border-gray-100">
-            {box.badge || "عرض مميز"}
+            عرض مميز
           </span>
         </div>
       </div>
@@ -48,31 +48,16 @@ export const BoxCard: React.FC<BoxCardProps> = ({
           {/* DETAILS ROW - Responsive Text & Gap */}
           <div className="flex items-center gap-3 sm:gap-4 text-gray-500 text-xs sm:text-sm mb-3 sm:mb-4 border-b border-gray-50 pb-3 sm:pb-4">
             <span className="flex items-center gap-1 whitespace-nowrap">
-              <i className="fa-solid fa-users text-red-700"></i>
-              يكفي {box.serves}
-            </span>
-            <span className="flex items-center gap-1 whitespace-nowrap">
               <i className="fa-solid fa-utensils text-red-700"></i>
-              {box.chef}
+              صندوق مميز
             </span>
           </div>
 
           {/* ITEMS TAGS - Responsive Flex Wrap */}
           <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-4 sm:mb-6">
-            {box.items &&
-              box.items.slice(0, 3).map((item, idx) => (
-                <span
-                  key={idx}
-                  className="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-full whitespace-nowrap"
-                >
-                  {item}
-                </span>
-              ))}
-            {box.items && box.items.length > 3 && (
-              <span className="bg-gray-100 text-gray-500 text-xs px-2 py-1 rounded-full">
-                +{box.items.length - 3}
-              </span>
-            )}
+            <span className="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-full whitespace-nowrap">
+              صندوق طعام متكامل
+            </span>
           </div>
         </div>
 
@@ -96,7 +81,7 @@ export const BoxCard: React.FC<BoxCardProps> = ({
             cart={cart}
             updateQuantity={updateQuantity}
             className="w-full h-11 sm:h-12 lg:h-13 shadow-lg text-sm sm:text-base font-semibold transition-all duration-200"
-            disabled={!isOpen}
+            disabled={!box.is_active}
           />
         </div>
       </div>

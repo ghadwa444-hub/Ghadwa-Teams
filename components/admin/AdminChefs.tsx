@@ -1,32 +1,28 @@
 
 import React, { useState, useRef } from 'react';
-import { Chef, Order } from '../../types';
+import { Chef } from '../../types';
 import { AdminFormModal } from '../Modals';
 import { imageUploadService } from '../../services/imageUploadService';
-import { validateChefForm, validateChefName, validateChefSpecialty, validateChefBio, validateWorkingHours, validateDeliveryTime } from '../../utils/validations';
 import { supabase } from '../../services/supabase';
 
 interface AdminChefsProps {
     chefs: Chef[];
-    orders: Order[];
-    toggleChefStatus: (id: number) => void;
+    toggleChefStatus: (id: string) => void;
     onAdd: (chef: Chef) => void;
     onEdit: (chef: Chef) => void;
-    onDelete: (id: number) => void;
+    onDelete: (id: string) => void;
 }
 
-export const AdminChefs: React.FC<AdminChefsProps> = ({ chefs, orders, toggleChefStatus, onAdd, onEdit, onDelete }) => {
+export const AdminChefs: React.FC<AdminChefsProps> = ({ chefs, toggleChefStatus, onAdd, onEdit, onDelete }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [currentChef, setCurrentChef] = useState<Chef | null>(null);
-    const [formData, setFormData] = useState<any>({ name: '', specialty: '', bio: '', img: '', cover: '', workingHours: '', deliveryTime: '' });
+    const [formData, setFormData] = useState<any>({ name: '', specialty: '', bio: '', img: '' });
     const [formErrors, setFormErrors] = useState<Record<string, string>>({});
     const [isLoading, setIsLoading] = useState(false);
     const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
-    const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
+    const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
     const [profileImagePreview, setProfileImagePreview] = useState<string>('');
-    const [coverImagePreview, setCoverImagePreview] = useState<string>('');
     const profileImageRef = useRef<HTMLInputElement>(null);
-    const coverImageRef = useRef<HTMLInputElement>(null);
 
     const showNotification = (type: 'success' | 'error', message: string) => {
         setNotification({ type, message });
@@ -34,26 +30,27 @@ export const AdminChefs: React.FC<AdminChefsProps> = ({ chefs, orders, toggleChe
     };
 
     const clearForm = () => {
-        setFormData({ name: '', specialty: '', bio: '', img: '', cover: '', workingHours: '', deliveryTime: '' });
+        setFormData({ name: '', specialty: '', bio: '', img: '' });
         setFormErrors({});
         setProfileImagePreview('');
-        setCoverImagePreview('');
         if (profileImageRef.current) profileImageRef.current.value = '';
-        if (coverImageRef.current) coverImageRef.current.value = '';
     };
 
     const openAdd = () => {
         setCurrentChef(null);
         clearForm();
-        setFormData({ ...formData, workingHours: '10:00 - 22:00', deliveryTime: '30 mins' });
         setIsModalOpen(true);
     };
 
     const openEdit = (chef: Chef) => {
         setCurrentChef(chef);
-        setFormData(chef);
-        setProfileImagePreview(chef.img || '');
-        setCoverImagePreview(chef.cover || '');
+        setFormData({
+            name: chef.chef_name,
+            specialty: chef.specialty || '',
+            bio: chef.description || '',
+            img: chef.image_url || '',
+        });
+        setProfileImagePreview(chef.image_url || '');
         setFormErrors({});
         setIsModalOpen(true);
     };
@@ -70,32 +67,12 @@ export const AdminChefs: React.FC<AdminChefsProps> = ({ chefs, orders, toggleChe
         reader.readAsDataURL(file);
     };
 
-    const handleCoverImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-
-        // Show preview immediately
-        const reader = new FileReader();
-        reader.onloadend = () => {
-            setCoverImagePreview(reader.result as string);
-        };
-        reader.readAsDataURL(file);
-    };
-
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         
-        // Validate form
-        const validation = validateChefForm({
-            name: formData.name,
-            specialty: formData.specialty,
-            bio: formData.bio,
-            workingHours: formData.workingHours,
-            deliveryTime: formData.deliveryTime,
-        });
-
-        if (!validation.valid) {
-            setFormErrors(validation.errors);
+        // Validate form - only validate required fields
+        if (!formData.name || formData.name.trim().length < 2) {
+            setFormErrors({ name: 'اسم الشيف مطلوب (حد أدنى حرفين)' });
             showNotification('error', 'Please fix the errors below');
             return;
         }
@@ -104,8 +81,7 @@ export const AdminChefs: React.FC<AdminChefsProps> = ({ chefs, orders, toggleChe
         setFormErrors({});
 
         try {
-            let profileImageUrl = formData.img;
-            let coverImageUrl = formData.cover;
+            let profileImageUrl = formData.img || '';
 
             // Upload profile image if changed
             if (profileImageRef.current?.files?.[0]) {
@@ -119,52 +95,62 @@ export const AdminChefs: React.FC<AdminChefsProps> = ({ chefs, orders, toggleChe
                 profileImageUrl = uploadResult.url!;
             }
 
-            // Upload cover image if changed
-            if (coverImageRef.current?.files?.[0]) {
-                const uploadResult = await imageUploadService.uploadChefImage(
-                    coverImageRef.current.files[0],
-                    'cover'
-                );
-                if (!uploadResult.success) {
-                    throw new Error(uploadResult.error || 'Failed to upload cover image');
-                }
-                coverImageUrl = uploadResult.url!;
-            }
-
+            // Map form data to actual database schema
             const chefData = {
-                ...formData,
-                img: profileImageUrl,
-                cover: coverImageUrl,
+                chef_name: formData.name.trim(),
+                specialty: formData.specialty?.trim() || null,
+                description: formData.bio?.trim() || null,
+                image_url: profileImageUrl || null,
+                is_active: true,
+                rating: 5.0,
             };
 
             if (currentChef) {
                 // Update existing chef in database
-                const { error } = await supabase
+                const { data, error } = await supabase
                     .from('chefs')
                     .update(chefData)
-                    .eq('id', currentChef.id);
+                    .eq('id', currentChef.id)
+                    .select()
+                    .single();
 
                 if (error) throw error;
-                onEdit({ ...currentChef, ...chefData });
+                
+                // Call onEdit with the updated chef data
+                const updatedChef: Chef = {
+                    id: currentChef.id,
+                    chef_name: chefData.chef_name,
+                    specialty: chefData.specialty || '',
+                    description: chefData.description || '',
+                    image_url: chefData.image_url || '',
+                    is_active: chefData.is_active,
+                    rating: chefData.rating,
+                };
+                onEdit(updatedChef);
                 showNotification('success', 'Chef updated successfully! ✅');
             } else {
                 // Add new chef to database
-                const newChef = {
-                    ...chefData,
-                    id: Date.now(),
-                    rating: 5.0,
-                    reviews: 0,
-                    orders: '0',
-                    isOpen: true,
-                    badges: [],
-                };
-
-                const { error } = await supabase
+                const { data, error } = await supabase
                     .from('chefs')
-                    .insert([newChef]);
+                    .insert([chefData])
+                    .select()
+                    .single();
 
                 if (error) throw error;
-                onAdd(newChef);
+                
+                // Call onAdd with the new chef from database
+                if (data) {
+                    const newChef: Chef = {
+                        id: data.id,
+                        chef_name: data.chef_name,
+                        specialty: data.specialty || '',
+                        description: data.description || '',
+                        image_url: data.image_url || '',
+                        is_active: data.is_active,
+                        rating: data.rating || 5.0,
+                    };
+                    onAdd(newChef);
+                }
                 showNotification('success', 'Chef added successfully! ✅');
             }
 
@@ -178,7 +164,7 @@ export const AdminChefs: React.FC<AdminChefsProps> = ({ chefs, orders, toggleChe
         }
     };
 
-    const handleDelete = async (id: number) => {
+    const handleDelete = async (id: string) => {
         try {
             setIsLoading(true);
             const { error } = await supabase
@@ -198,22 +184,10 @@ export const AdminChefs: React.FC<AdminChefsProps> = ({ chefs, orders, toggleChe
         }
     };
 
-    const getChefStats = (chefName: string) => {
-        let orderCount = 0;
-        let totalRevenue = 0;
-
-        orders.forEach(order => {
-            if (order.itemsDetails && Array.isArray(order.itemsDetails)) {
-                const chefItems = order.itemsDetails.filter(item => item.chef === chefName);
-                if (chefItems.length > 0) {
-                    orderCount++;
-                    const revenue = chefItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-                    totalRevenue += revenue;
-                }
-            }
-        });
-
-        return { orderCount, totalRevenue };
+    const getChefStats = (_chefName: string) => {
+        // Stats will be calculated from orders table when properly linked
+        // For now return placeholder values
+        return { orderCount: 0, totalRevenue: 0 };
     };
 
     return (
@@ -261,29 +235,23 @@ export const AdminChefs: React.FC<AdminChefsProps> = ({ chefs, orders, toggleChe
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {chefs.map(chef => {
-                    const stats = getChefStats(chef.name);
+                    const stats = getChefStats(chef.chef_name);
                     
                     return (
-                        <div key={chef.id} className={`bg-white rounded-[2rem] border transition-all duration-300 ${chef.isOpen ? 'border-green-200 shadow-lg shadow-green-100/50' : 'border-gray-200 opacity-90' } overflow-hidden relative group hover:shadow-xl`}>
-                             {/* Cover Image Area */}
+                        <div key={chef.id} className={`bg-white rounded-[2rem] border transition-all duration-300 ${chef.is_active ? 'border-green-200 shadow-lg shadow-green-100/50' : 'border-gray-200 opacity-90' } overflow-hidden relative group hover:shadow-xl`}>
+                             {/* Profile Image Area */}
                              <div className="h-32 w-full relative bg-gray-100">
-                                <img src={chef.cover} alt={`${chef.name} cover`} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                                <img src={chef.image_url || '/placeholder.jpg'} alt={`${chef.chef_name} profile`} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
                                 <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
                                 
                                 {/* Status Pill */}
                                 <div className={`absolute top-4 left-4 px-3 py-1 rounded-full text-[10px] font-bold backdrop-blur-md shadow-sm border flex items-center gap-1.5 ${
-                                    chef.isOpen 
+                                    chef.is_active 
                                     ? 'bg-green-500/90 text-white border-green-400' 
                                     : 'bg-red-500/90 text-white border-red-400'
                                 }`}>
-                                    <span className={`w-1.5 h-1.5 rounded-full ${chef.isOpen ? 'bg-white animate-pulse' : 'bg-white/50'}`}></span>
-                                    {chef.isOpen ? 'مفتوح' : 'مغلق'}
-                                </div>
-
-                                {/* Delivery Time Badge */}
-                                <div className="absolute bottom-2 right-2 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-lg text-[10px] font-bold text-gray-800 flex items-center gap-1 shadow-sm">
-                                    <i className="fa-solid fa-motorcycle text-[#8B2525]"></i>
-                                    {chef.deliveryTime}
+                                    <span className={`w-1.5 h-1.5 rounded-full ${chef.is_active ? 'bg-white animate-pulse' : 'bg-white/50'}`}></span>
+                                    {chef.is_active ? 'مفتوح' : 'مغلق'}
                                 </div>
 
                                 {/* Action Buttons - Always Visible on Mobile, Hover on Desktop */}
@@ -314,36 +282,32 @@ export const AdminChefs: React.FC<AdminChefsProps> = ({ chefs, orders, toggleChe
                                 {/* Profile Image */}
                                 <div className="flex justify-center -mt-10 mb-3">
                                      <div className="w-20 h-20 rounded-full p-1 bg-white shadow-lg">
-                                        <img src={chef.img} alt={chef.name} className="w-full h-full object-cover rounded-full" />
+                                        <img src={chef.image_url || '/placeholder.jpg'} alt={chef.chef_name} className="w-full h-full object-cover rounded-full" />
                                      </div>
                                 </div>
                                 
                                 <div className="text-center mb-4">
-                                    <h3 className="font-bold text-xl text-gray-900">{chef.name}</h3>
+                                    <h3 className="font-bold text-xl text-gray-900">{chef.chef_name}</h3>
                                     <p className="text-sm text-[#8B2525] font-medium bg-red-50 px-3 py-0.5 rounded-full inline-block mt-1">{chef.specialty}</p>
                                 </div>
                                 
                                 {/* Stats Grid */}
                                 <div className="grid grid-cols-2 gap-3 mb-4">
                                     <div className="bg-gray-50 p-3 rounded-2xl border border-gray-100 text-center">
-                                        <p className="text-[10px] text-gray-500 font-bold mb-1">الطلبات</p>
-                                        <p className="font-black text-gray-900 text-lg">{stats.orderCount}</p>
+                                        <p className="text-[10px] text-gray-500 font-bold mb-1">التقييم</p>
+                                        <p className="font-black text-gray-900 text-lg">{chef.rating.toFixed(1)} ⭐</p>
                                     </div>
                                     <div className="bg-gray-50 p-3 rounded-2xl border border-gray-100 text-center">
-                                        <p className="text-[10px] text-gray-500 font-bold mb-1">الأرباح</p>
-                                        <p className="font-black text-[#8B2525] text-lg">{stats.totalRevenue}</p>
+                                        <p className="text-[10px] text-gray-500 font-bold mb-1">الحالة</p>
+                                        <p className="font-black text-[#8B2525] text-lg">{chef.is_active ? 'نشط' : 'معطل'}</p>
                                     </div>
-                                </div>
-
-                                <div className="flex items-center justify-between text-xs text-gray-500 pt-4 border-t border-gray-100 mb-4">
-                                    <div className="flex items-center gap-1"><i className="fa-regular fa-clock text-gray-400"></i> {chef.workingHours}</div>
                                 </div>
 
                                 <button 
                                     onClick={() => toggleChefStatus(chef.id)}
-                                    className={`w-full py-2.5 rounded-xl font-bold text-sm text-white transition-all shadow-md ${chef.isOpen ? 'bg-red-500 hover:bg-red-600 shadow-red-200' : 'bg-green-500 hover:bg-green-600 shadow-green-200'}`}
+                                    className={`w-full py-2.5 rounded-xl font-bold text-sm text-white transition-all shadow-md ${chef.is_active ? 'bg-red-500 hover:bg-red-600 shadow-red-200' : 'bg-green-500 hover:bg-green-600 shadow-green-200'}`}
                                 >
-                                     {chef.isOpen ? 'إغلاق المطبخ 🔒' : 'فتح المطبخ 🔓'}
+                                     {chef.is_active ? 'إغلاق المطبخ 🔒' : 'فتح المطبخ 🔓'}
                                 </button>
                             </div>
                         </div>
@@ -377,31 +341,6 @@ export const AdminChefs: React.FC<AdminChefsProps> = ({ chefs, orders, toggleChe
                     {formErrors.img && <p className="text-red-500 text-sm">{formErrors.img}</p>}
                 </div>
 
-                {/* Cover Image Upload */}
-                <div className="space-y-2">
-                    <label htmlFor="cover-img" className="block text-sm font-bold text-gray-700">صورة الغلاف</label>
-                    <div className="flex gap-4">
-                        <input
-                            id="cover-img"
-                            ref={coverImageRef}
-                            type="file"
-                            accept="image/*"
-                            onChange={handleCoverImageChange}
-                            disabled={isLoading}
-                            title="Select cover image"
-                            className="flex-1 p-3 bg-gray-50 rounded-xl border border-gray-200 text-gray-900 text-sm"
-                        />
-                        {(coverImagePreview || formData.cover) && (
-                            <img
-                                src={coverImagePreview || formData.cover}
-                                alt="Cover preview"
-                                className="w-20 h-12 rounded-lg object-cover border-2 border-gray-300"
-                            />
-                        )}
-                    </div>
-                    {formErrors.cover && <p className="text-red-500 text-sm">{formErrors.cover}</p>}
-                </div>
-
                 {/* Name */}
                 <div className="space-y-1">
                     <input
@@ -422,40 +361,11 @@ export const AdminChefs: React.FC<AdminChefsProps> = ({ chefs, orders, toggleChe
                         type="text"
                         placeholder="التخصص (مثلاً: محاشي)"
                         className={`w-full p-3 bg-gray-50 rounded-xl border ${formErrors.specialty ? 'border-red-500' : 'border-gray-200'} text-gray-900`}
-                        value={formData.specialty}
+                        value={formData.specialty || ''}
                         onChange={e => setFormData({...formData, specialty: e.target.value})}
                         disabled={isLoading}
-                        required
                     />
                     {formErrors.specialty && <p className="text-red-500 text-sm">{formErrors.specialty}</p>}
-                </div>
-
-                {/* Working Hours & Delivery Time */}
-                <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1">
-                        <input
-                            type="text"
-                            placeholder="مواعيد العمل (مثلاً: 10:00 - 22:00)"
-                            className={`w-full p-3 bg-gray-50 rounded-xl border ${formErrors.workingHours ? 'border-red-500' : 'border-gray-200'} text-gray-900 text-sm`}
-                            value={formData.workingHours}
-                            onChange={e => setFormData({...formData, workingHours: e.target.value})}
-                            disabled={isLoading}
-                            required
-                        />
-                        {formErrors.workingHours && <p className="text-red-500 text-xs">{formErrors.workingHours}</p>}
-                    </div>
-                    <div className="space-y-1">
-                        <input
-                            type="text"
-                            placeholder="وقت التوصيل (مثلاً: 30 mins)"
-                            className={`w-full p-3 bg-gray-50 rounded-xl border ${formErrors.deliveryTime ? 'border-red-500' : 'border-gray-200'} text-gray-900 text-sm`}
-                            value={formData.deliveryTime}
-                            onChange={e => setFormData({...formData, deliveryTime: e.target.value})}
-                            disabled={isLoading}
-                            required
-                        />
-                        {formErrors.deliveryTime && <p className="text-red-500 text-xs">{formErrors.deliveryTime}</p>}
-                    </div>
                 </div>
 
                 {/* Bio */}
@@ -463,10 +373,9 @@ export const AdminChefs: React.FC<AdminChefsProps> = ({ chefs, orders, toggleChe
                     <textarea
                         placeholder="نبذة عن الشيف"
                         className={`w-full p-3 bg-gray-50 rounded-xl border ${formErrors.bio ? 'border-red-500' : 'border-gray-200'} text-gray-900 h-24 resize-none`}
-                        value={formData.bio}
+                        value={formData.bio || ''}
                         onChange={e => setFormData({...formData, bio: e.target.value})}
                         disabled={isLoading}
-                        required
                     />
                     {formErrors.bio && <p className="text-red-500 text-sm">{formErrors.bio}</p>}
                 </div>

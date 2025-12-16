@@ -232,7 +232,7 @@ const App = () => {
         loadData();
     }, []);
 
-    const updateQuantity = (id: number, newQty: number, itemToAdd?: MenuItem) => {
+    const updateQuantity = (id: string | number, newQty: number, itemToAdd?: MenuItem) => {
         if (newQty < 0) return;
 
         logger.debug('CART', '🛒 Update quantity requested', { itemId: id, newQuantity: newQty, itemName: itemToAdd?.name });
@@ -249,15 +249,15 @@ const App = () => {
 
         if (newQty === 0) {
             setCart(prev => {
-                const updated = prev.filter(item => item.id !== id);
+                const updated = prev.filter(item => String(item.id) !== String(id));
                 logger.info('CART', '🗑️ Item removed from cart', { itemId: id, cartSize: updated.length });
                 return updated;
             });
         } else {
             setCart(prev => {
-                const exists = prev.find(item => item.id === id);
+                const exists = prev.find(item => String(item.id) === String(id));
                 if (exists) {
-                    const updated = prev.map(item => item.id === id ? { ...item, quantity: newQty } : item);
+                    const updated = prev.map(item => String(item.id) === String(id) ? { ...item, quantity: newQty } : item);
                     logger.info('CART', '✏️ Item quantity updated', { itemId: id, quantity: newQty });
                     return updated;
                 } else if (itemToAdd) {
@@ -317,13 +317,13 @@ const App = () => {
     };
 
     // --- Admin Handlers (Using API Service) ---
-    const updateOrderStatus = (id: number, status: string) => {
+    const updateOrderStatus = (id: string, status: string) => {
         logger.info('ADMIN_ORDERS', `📊 Order status updated`, { orderId: id, newStatus: status });
         setOrders(prev => prev.map(o => o.id === id ? {...o, status} : o));
         api.updateOrderStatus(id, status);
     };
     
-    const handleDeleteOrder = (id: number) => {
+    const handleDeleteOrder = (id: string) => {
         if(window.confirm('هل أنت متأكد من حذف هذا الطلب؟')) {
             logger.warn('ADMIN_ORDERS', '🗑️ Order deleted', { orderId: id });
             setOrders(prev => prev.filter(o => o.id !== id));
@@ -339,31 +339,29 @@ const App = () => {
         setSelectedOrder(order);
         setActivePage('admin-order-details');
     }
-    const toggleChefStatus = (id: number) => {
-        const updatedChefs = chefs.map(c => c.id === id ? {...c, isOpen: !c.isOpen} : c);
+    const toggleChefStatus = (id: string) => {
+        const updatedChefs = chefs.map(c => c.id === id ? {...c, is_active: !c.is_active} : c);
         const chef = updatedChefs.find(c => c.id === id);
-        logger.info('ADMIN_CHEFS', `🔄 Chef status toggled`, { chefId: id, chefName: chef?.name, isNowOpen: chef?.isOpen });
+        logger.info('ADMIN_CHEFS', `🔄 Chef status toggled`, { chefId: id, chefName: chef?.chef_name, isNowActive: chef?.is_active });
         setChefs(updatedChefs);
         if (chef) api.updateChef(chef);
     };
     const handleAddChef = (newChef: Chef) => {
-        logger.info('ADMIN_CHEFS', '➕ New chef added', { chefName: newChef.name, specialty: newChef.specialty });
+        logger.info('ADMIN_CHEFS', '➕ New chef added', { chefName: newChef.chef_name, specialty: newChef.specialty });
         setChefs([...chefs, newChef]);
-        api.addChef(newChef);
+        // Already saved to database in AdminChefs component
     }
     const handleEditChef = (updatedChef: Chef) => {
-        logger.info('ADMIN_CHEFS', '✏️ Chef updated', { chefId: updatedChef.id, chefName: updatedChef.name });
+        logger.info('ADMIN_CHEFS', '✏️ Chef updated', { chefId: updatedChef.id, chefName: updatedChef.chef_name });
         setChefs(prev => prev.map(c => c.id === updatedChef.id ? updatedChef : c));
-        api.updateChef(updatedChef);
+        // Already saved to database in AdminChefs component
     }
     
-    const handleDeleteChef = (id: number) => { 
-        if(window.confirm('هل أنت متأكد من حذف هذا الشيف؟')) {
-            const chef = chefs.find(c => c.id === id);
-            logger.warn('ADMIN_CHEFS', '🗑️ Chef deleted', { chefId: id, chefName: chef?.name });
-            setChefs(prev => prev.filter(c => c.id !== id)); 
-            api.deleteChef(id);
-        }
+    const handleDeleteChef = (id: string) => { 
+        const chef = chefs.find(c => c.id === id);
+        logger.warn('ADMIN_CHEFS', '🗑️ Chef deleted', { chefId: id, chefName: chef?.chef_name });
+        setChefs(prev => prev.filter(c => c.id !== id)); 
+        // Already deleted from database in AdminChefs component
     }
     
     const handleAddMeal = (newMeal: MenuItem) => {
@@ -377,7 +375,7 @@ const App = () => {
         api.updateMenuItem(updatedMeal);
     }
     
-    const handleDeleteMeal = (id: number) => { 
+    const handleDeleteMeal = (id: string) => { 
         const meal = menuItems.find(m => m.id === id);
         logger.warn('ADMIN_MEALS', '🗑️ Meal deleted', { mealId: id, mealName: meal?.name });
         setMenuItems(prev => prev.filter(m => m.id !== id)); 
@@ -395,7 +393,7 @@ const App = () => {
         api.updateOffer(updatedOffer);
     }
     
-    const handleDeleteOffer = (id: number) => { 
+    const handleDeleteOffer = (id: string) => { 
         if(window.confirm('هل أنت متأكد من حذف هذا العرض؟')) {
             const offer = offers.find(o => o.id === id);
             logger.warn('ADMIN_OFFERS', '🗑️ Offer deleted', { offerId: id, offerName: offer?.name });
@@ -415,7 +413,7 @@ const App = () => {
         api.updateBox(updatedBox);
     }
     
-    const handleDeleteBox = (id: number) => { 
+    const handleDeleteBox = (id: string) => { 
         if(window.confirm('هل أنت متأكد من حذف هذا البوكس؟')) {
             const box = boxes.find(b => b.id === id);
             logger.warn('ADMIN_BOXES', '🗑️ Box deleted', { boxId: id, boxName: box?.name });
@@ -435,7 +433,7 @@ const App = () => {
         api.updateBestSeller(updatedItem);
     }
     
-    const handleDeleteBestSeller = (id: number) => { 
+    const handleDeleteBestSeller = (id: string) => { 
         if(window.confirm('هل أنت متأكد من حذف الوجبة من الأكثر مبيعاً؟')) {
             const item = bestSellers.find(i => i.id === id);
             logger.warn('ADMIN_BESTSELLERS', '🗑️ Best seller deleted', { itemId: id, itemName: item?.name });
@@ -449,7 +447,7 @@ const App = () => {
         setPromoCodes([...promoCodes, newPromo]);
         api.addPromoCode(newPromo);
     }
-    const handleDeletePromo = (id: number) => { 
+    const handleDeletePromo = (id: string) => { 
         if(window.confirm('هل أنت متأكد من حذف هذا الكوبون؟')) {
             setPromoCodes(prev => prev.filter(p => p.id !== id)); 
             api.deletePromoCode(id);
@@ -609,7 +607,7 @@ const App = () => {
                          )}
                          {activePage === 'admin-orders' && <AdminOrders orders={orders} updateOrderStatus={updateOrderStatus} onDeleteOrder={handleDeleteOrder} onViewOrder={handleViewOrder} />}
                          {activePage === 'admin-order-details' && <AdminOrderDetails order={selectedOrder} onBack={() => setActivePage('admin-orders')} updateOrderStatus={updateOrderStatus} />}
-                         {activePage === 'admin-chefs' && <AdminChefs chefs={chefs} orders={orders} toggleChefStatus={toggleChefStatus} onAdd={handleAddChef} onEdit={handleEditChef} onDelete={handleDeleteChef} />}
+                         {activePage === 'admin-chefs' && <AdminChefs chefs={chefs} toggleChefStatus={toggleChefStatus} onAdd={handleAddChef} onEdit={handleEditChef} onDelete={handleDeleteChef} />}
                          {activePage === 'admin-meals' && <AdminMeals meals={menuItems} chefs={chefs} onAdd={handleAddMeal} onEdit={handleEditMeal} onDelete={handleDeleteMeal} />}
                          {activePage === 'admin-offers' && <AdminOffers offers={offers} chefs={chefs} onAdd={handleAddOffer} onEdit={handleEditOffer} onDelete={handleDeleteOffer} />}
                          {activePage === 'admin-boxes' && <AdminBoxes boxes={boxes} chefs={chefs} onAdd={handleAddBox} onEdit={handleEditBox} onDelete={handleDeleteBox} />}

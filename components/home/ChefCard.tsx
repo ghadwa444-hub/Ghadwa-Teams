@@ -15,8 +15,8 @@ export const ChefCard: React.FC<ChefCardProps> = ({ chef, onClick }) => {
       {/* Cover Image - Responsive Heights */}
       <div className="h-40 sm:h-44 md:h-48 lg:h-56 xl:h-64 overflow-hidden relative">
         <img
-          src={chef.cover}
-          alt={chef.name}
+          src={chef.image_url || 'https://via.placeholder.com/400x300?text=Chef'}
+          alt={chef.chef_name}
           className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
@@ -24,23 +24,23 @@ export const ChefCard: React.FC<ChefCardProps> = ({ chef, onClick }) => {
         {/* Status Badge */}
         <div
           className={`absolute top-3 sm:top-4 left-3 sm:left-4 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs font-bold backdrop-blur-md shadow-sm border flex items-center gap-1.5 ${
-            chef.isOpen
+            chef.is_active
               ? 'bg-green-500/90 text-white border-green-400'
               : 'bg-red-500/90 text-white border-red-400'
           }`}
         >
           <span
             className={`w-2 h-2 rounded-full ${
-              chef.isOpen ? 'bg-white animate-pulse' : 'bg-white/50'
+              chef.is_active ? 'bg-white animate-pulse' : 'bg-white/50'
             }`}
           ></span>
-          {chef.isOpen ? 'مفتوح الآن' : 'مغلق'}
+          {chef.is_active ? 'مفتوح الآن' : 'مغلق'}
         </div>
 
         {/* Delivery Time Badge */}
         <div className="absolute bottom-2 sm:bottom-3 right-2 sm:right-3 bg-white/95 backdrop-blur-sm px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs font-bold text-gray-800 flex items-center gap-1.5 shadow-md border border-gray-100">
           <i className="fa-solid fa-motorcycle text-[#8B2525]"></i>
-          <span className="hidden sm:inline">{chef.deliveryTime}</span>
+          <span className="hidden sm:inline">30 دقيقة</span>
         </div>
       </div>
 
@@ -50,8 +50,8 @@ export const ChefCard: React.FC<ChefCardProps> = ({ chef, onClick }) => {
         <div className="absolute -top-10 sm:-top-12 md:-top-14 right-4 sm:right-5 md:right-6">
           <div className="w-20 h-20 sm:w-22 sm:h-22 md:w-24 md:h-24 rounded-full border-4 border-white shadow-md overflow-hidden bg-white">
             <img
-              src={chef.img}
-              alt={chef.name}
+              src={chef.image_url || 'https://via.placeholder.com/100x100?text=Chef'}
+              alt={chef.chef_name}
               className="w-full h-full object-cover"
             />
           </div>
@@ -60,13 +60,13 @@ export const ChefCard: React.FC<ChefCardProps> = ({ chef, onClick }) => {
         {/* Info */}
         <div className="mb-3 sm:mb-4">
           <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 mb-1 group-hover:text-[#8B2525] transition-colors line-clamp-1">
-            {chef.name}
+            {chef.chef_name}
           </h3>
           <p className="text-xs sm:text-sm font-medium text-[#8B2525] bg-red-50 px-2 py-1 rounded-lg w-fit mb-2">
-            {chef.specialty}
+            {chef.specialty || 'شيف متعدد المواهب'}
           </p>
           <p className="text-xs sm:text-sm text-gray-500 line-clamp-2 leading-relaxed hidden sm:block">
-            {chef.bio}
+            {chef.description || 'شيف متميز يقدم أحلى الأطباق'}
           </p>
         </div>
 
@@ -74,12 +74,12 @@ export const ChefCard: React.FC<ChefCardProps> = ({ chef, onClick }) => {
         <div className="flex items-center justify-between pt-3 sm:pt-4 border-t border-gray-50 gap-2">
           <div className="flex items-center gap-1 text-yellow-500 font-bold bg-yellow-50 px-2 py-1 rounded-lg text-xs sm:text-sm">
             <i className="fa-solid fa-star"></i>
-            <span className="hidden sm:inline">{chef.rating}</span>
-            <span className="sm:hidden text-xs">{chef.rating}</span>
+            <span className="hidden sm:inline">{chef.rating.toFixed(1)}</span>
+            <span className="sm:hidden text-xs">{chef.rating.toFixed(1)}</span>
           </div>
           <div className="text-xs sm:text-sm text-gray-400 font-medium flex items-center gap-1">
             <i className="fa-solid fa-bag-shopping text-xs sm:text-sm"></i>
-            <span className="hidden sm:inline">{chef.orders} طلب</span>
+            <span className="hidden sm:inline">{chef.id}</span>
           </div>
         </div>
 

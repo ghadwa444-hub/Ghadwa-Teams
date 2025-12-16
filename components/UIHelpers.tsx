@@ -5,7 +5,7 @@ import { CartItem, MenuItem } from '../types';
 interface AddToCartButtonProps {
     item: MenuItem;
     cart: CartItem[];
-    updateQuantity: (id: number, qty: number, item?: MenuItem) => void;
+    updateQuantity: (id: string | number, qty: number, item?: MenuItem) => void;
     className?: string;
     disabled?: boolean;
     isLarge?: boolean;

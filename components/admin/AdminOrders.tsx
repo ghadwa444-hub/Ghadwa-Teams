@@ -6,19 +6,19 @@ import { supabase } from '../../services/supabase';
 
 interface AdminOrdersProps {
     orders: Order[];
-    updateOrderStatus: (id: number, status: string) => void;
-    onDeleteOrder: (id: number) => void;
+    updateOrderStatus: (id: string, status: string) => void;
+    onDeleteOrder: (id: string) => void;
     onViewOrder: (order: Order) => void;
 }
 
 interface OrderCardProps {
     order: Order;
-    updateOrderStatus: (id: number, status: string) => void;
-    onDeleteOrder: (id: number) => void;
+    updateOrderStatus: (id: string, status: string) => void;
+    onDeleteOrder: (id: string) => void;
     onViewOrder: (order: Order) => void;
 }
 
-const OrderCard: React.FC<OrderCardProps & { isLoading: boolean; onStatusChange: (id: number, status: string) => Promise<void>; onDeleteConfirm: (id: number) => void }> = ({ order, updateOrderStatus, onDeleteOrder, onViewOrder, isLoading, onStatusChange, onDeleteConfirm }) => {
+const OrderCard: React.FC<OrderCardProps & { isLoading: boolean; onStatusChange: (id: string, status: string) => Promise<void>; onDeleteConfirm: (id: string) => void }> = ({ order, updateOrderStatus, onDeleteOrder, onViewOrder, isLoading, onStatusChange, onDeleteConfirm }) => {
     const [isPending, setIsPending] = useState(false);
 
     const handleStatusChange = async (newStatus: string) => {
@@ -53,11 +53,11 @@ const OrderCard: React.FC<OrderCardProps & { isLoading: boolean; onStatusChange:
             </div>
         </div>
         
-        <h4 className="font-bold text-gray-800 mb-1 text-sm">{order.customer}</h4>
-        <p className="text-xs text-gray-500 mb-3 line-clamp-2 leading-relaxed">{order.items}</p>
+        <h4 className="font-bold text-gray-800 mb-1 text-sm">{order.customer_name}</h4>
+        <p className="text-xs text-gray-500 mb-3 line-clamp-2 leading-relaxed">{order.delivery_address}</p>
         
         <div className="flex justify-between items-center pt-3 border-t border-dashed border-gray-100 mt-2">
-            <span className="font-black text-[#8B2525]">{order.total} ج.م</span>
+            <span className="font-black text-[#8B2525]">{order.total_amount} ج.م</span>
             
             {order.status === 'pending' && (
                 <button 
@@ -102,17 +102,17 @@ export const AdminOrders: React.FC<AdminOrdersProps> = ({ orders, updateOrderSta
     const [viewMode, setViewMode] = useState('board');
     const [isLoading, setIsLoading] = useState(false);
     const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
-    const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
+    const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
     const showNotification = (type: 'success' | 'error', message: string) => {
         setNotification({ type, message });
         setTimeout(() => setNotification(null), 3000);
     };
 
-    const handleStatusChange = async (orderId: number, newStatus: string) => {
+    const handleStatusChange = async (orderId: string, newStatus: string) => {
         const validation = validateOrderStatus(newStatus);
         if (!validation.valid) {
-            showNotification('error', validation.error || 'Invalid status');
+            showNotification('error', validation.error || 'حالة غير صحيحة');
             return;
         }
 
@@ -124,7 +124,7 @@ export const AdminOrders: React.FC<AdminOrdersProps> = ({ orders, updateOrderSta
                 .eq('id', orderId);
 
             if (error) throw error;
-            showNotification('success', 'Order status updated! ✅');
+            showNotification('success', 'تم تحديث حالة الطلب! ✅');
         } catch (error) {
             console.error('Error updating order:', error);
             showNotification('error', `Error: ${error instanceof Error ? error.message : 'Failed to update order'}`);
@@ -133,7 +133,7 @@ export const AdminOrders: React.FC<AdminOrdersProps> = ({ orders, updateOrderSta
         }
     };
 
-    const handleDelete = async (id: number) => {
+    const handleDelete = async (id: string) => {
         try {
             setIsLoading(true);
             const { error } = await supabase
@@ -144,7 +144,7 @@ export const AdminOrders: React.FC<AdminOrdersProps> = ({ orders, updateOrderSta
             if (error) throw error;
             onDeleteOrder(id);
             setDeleteConfirm(null);
-            showNotification('success', 'Order deleted successfully! 🗑️');
+            showNotification('success', 'تم حذف الطلب بنجاح! 🗑️');
         } catch (error) {
             console.error('Error deleting order:', error);
             showNotification('error', `Error: ${error instanceof Error ? error.message : 'Failed to delete order'}`);
@@ -223,13 +223,13 @@ export const AdminOrders: React.FC<AdminOrdersProps> = ({ orders, updateOrderSta
                         <tbody className="divide-y divide-gray-100 text-gray-800">
                             {orders.map(order => (
                                 <tr key={order.id} className="hover:bg-gray-50 transition-colors">
-                                    <td className="p-5 font-bold">#{order.id}</td>
+                                    <td className="p-5 font-bold text-xs">#{order.id.slice(0, 8)}...</td>
                                     <td className="p-5">
-                                        <div className="font-bold text-gray-900">{order.customer}</div>
-                                        <div className="text-xs text-gray-500">{order.date}</div>
+                                        <div className="font-bold text-gray-900">{order.customer_name}</div>
+                                        <div className="text-xs text-gray-500">{order.created_at ? new Date(order.created_at).toLocaleDateString('ar-EG') : '-'}</div>
                                     </td>
-                                    <td className="p-5 text-gray-600 max-w-xs truncate">{order.items}</td>
-                                    <td className="p-5 font-bold text-[#8B2525]">{order.total} ج.م</td>
+                                    <td className="p-5 text-gray-600 max-w-xs truncate">{order.delivery_address}</td>
+                                    <td className="p-5 font-bold text-[#8B2525]">{order.total_amount} ج.م</td>
                                     <td className="p-5">
                                         <span className={`px-3 py-1 rounded-full text-xs font-bold ${
                                                 order.status === 'delivered' ? 'bg-green-100 text-green-700' :

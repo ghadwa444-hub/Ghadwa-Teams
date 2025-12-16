@@ -9,17 +9,17 @@ interface AdminBoxesProps {
     chefs: Chef[];
     onAdd: (box: Box) => void;
     onEdit: (box: Box) => void;
-    onDelete: (id: number) => void;
+    onDelete: (id: string) => void;
 }
 
 export const AdminBoxes: React.FC<AdminBoxesProps> = ({ boxes, chefs, onAdd, onEdit, onDelete }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [currentBox, setCurrentBox] = useState<Box | null>(null);
-    const [formData, setFormData] = useState<any>({ name: '', price: '', serves: '', chef: '', itemsString: '', img: '' });
+    const [formData, setFormData] = useState<any>({ name: '', price: '', serves: '', chef_id: '', itemsString: '', image_url: '' });
     const [formErrors, setFormErrors] = useState<Record<string, string>>({});
     const [isLoading, setIsLoading] = useState(false);
     const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
-    const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
+    const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
     const showNotification = (type: 'success' | 'error', message: string) => {
         setNotification({ type, message });
@@ -31,22 +31,29 @@ export const AdminBoxes: React.FC<AdminBoxesProps> = ({ boxes, chefs, onAdd, onE
         if (!formData.name?.trim()) errors.name = 'اسم البوكس مطلوب';
         if (!formData.price || Number(formData.price) <= 0) errors.price = 'السعر يجب أن يكون أكبر من 0';
         if (!formData.serves?.trim()) errors.serves = 'عدد الأفراد مطلوب';
-        if (!formData.chef?.trim()) errors.chef = 'اختيار الشيف مطلوب';
+        if (!formData.chef_id?.trim()) errors.chef_id = 'اختيار الشيف مطلوب';
         if (!formData.itemsString?.trim()) errors.items = 'المكونات مطلوبة';
-        if (!formData.img?.trim()) errors.img = 'رابط الصورة مطلوب';
+        if (!formData.image_url?.trim()) errors.image_url = 'رابط الصورة مطلوب';
         return { valid: Object.keys(errors).length === 0, errors };
     };
 
     const openAdd = () => {
         setCurrentBox(null);
-        setFormData({ name: '', price: '', serves: '', chef: '', itemsString: '', img: '' });
+        setFormData({ name: '', price: '', serves: '', chef_id: '', itemsString: '', image_url: '' });
         setFormErrors({});
         setIsModalOpen(true);
     };
 
     const openEdit = (box: Box) => {
         setCurrentBox(box);
-        setFormData({ ...box, itemsString: box.items.join(', ') });
+        setFormData({ 
+            name: box.name,
+            price: box.price,
+            serves: box.serves,
+            chef_id: box.chef_id,
+            itemsString: box.items.join(', '),
+            image_url: box.image_url
+        });
         setFormErrors({});
         setIsModalOpen(true);
     };
@@ -70,43 +77,44 @@ export const AdminBoxes: React.FC<AdminBoxesProps> = ({ boxes, chefs, onAdd, onE
                 name: formData.name,
                 price: Number(formData.price),
                 serves: formData.serves,
-                chef: formData.chef,
+                chef_id: formData.chef_id,
                 items: items,
-                img: formData.img,
-                color: "from-orange-500 to-red-600",
-                accent: "bg-orange-50 text-orange-700",
-                badge: "عرض جديد",
-                category: 'غداء'
+                image_url: formData.image_url || null
             };
 
             if (currentBox) {
                 // Update existing box in database
-                const { error } = await supabase
+                const { data, error } = await supabase
                     .from('boxes')
                     .update(boxData)
-                    .eq('id', currentBox.id);
+                    .eq('id', currentBox.id)
+                    .select()
+                    .single();
 
                 if (error) throw error;
-                onEdit({ ...currentBox, ...boxData });
+                if (data) {
+                    const updatedBox: Box = { ...data };
+                    onEdit(updatedBox);
+                }
                 showNotification('success', 'تم تحديث البوكس بنجاح! ✅');
             } else {
                 // Add new box to database
-                const newBox = {
-                    ...boxData,
-                    id: Date.now(),
-                };
-
-                const { error } = await supabase
+                const { data, error } = await supabase
                     .from('boxes')
-                    .insert([newBox]);
+                    .insert([boxData])
+                    .select()
+                    .single();
 
                 if (error) throw error;
-                onAdd(newBox);
+                if (data) {
+                    const newBox: Box = { ...data };
+                    onAdd(newBox);
+                }
                 showNotification('success', 'تم إضافة البوكس بنجاح! ✅');
             }
 
             setIsModalOpen(false);
-            setFormData({ name: '', price: '', serves: '', chef: '', itemsString: '', img: '' });
+            setFormData({ name: '', price: '', serves: '', chef_id: '', itemsString: '', image_url: '' });
         } catch (error) {
             console.error('Error saving box:', error);
             showNotification('error', `خطأ: ${error instanceof Error ? error.message : 'فشل حفظ البوكس'}`);
@@ -115,7 +123,7 @@ export const AdminBoxes: React.FC<AdminBoxesProps> = ({ boxes, chefs, onAdd, onE
         }
     };
 
-    const handleDelete = async (id: number) => {
+    const handleDelete = async (id: string) => {
         try {
             setIsLoading(true);
             const { error } = await supabase
@@ -199,7 +207,7 @@ export const AdminBoxes: React.FC<AdminBoxesProps> = ({ boxes, chefs, onAdd, onE
                                 </button>
                             </div>
                             <div className="h-40 relative">
-                                <img src={box.img} alt={box.name} className="w-full h-full object-cover" />
+                                <img src={box.image_url || '/placeholder.jpg'} alt={box.name} className="w-full h-full object-cover" />
                                 <div className="absolute bottom-2 right-2 bg-white/90 backdrop-blur px-2 py-1 rounded text-xs font-bold text-gray-900">{box.price} ج.م</div>
                             </div>
                             <div className="p-4">
@@ -258,18 +266,18 @@ export const AdminBoxes: React.FC<AdminBoxesProps> = ({ boxes, chefs, onAdd, onE
                 
                 <div>
                     <select 
-                        className={`w-full p-3 bg-gray-50 rounded-xl border ${formErrors.chef ? 'border-red-500' : 'border-gray-200'} text-gray-900`}
-                        value={formData.chef} 
-                        onChange={e => setFormData({...formData, chef: e.target.value})}
+                        className={`w-full p-3 bg-gray-50 rounded-xl border ${formErrors.chef_id ? 'border-red-500' : 'border-gray-200'} text-gray-900`}
+                        value={formData.chef_id} 
+                        onChange={e => setFormData({...formData, chef_id: e.target.value})}
                         disabled={isLoading}
                         required
                     >
                         <option value="" disabled>اختر الشيف</option>
                         {chefs.map(chef => (
-                            <option key={chef.id} value={chef.name}>{chef.name}</option>
+                            <option key={chef.id} value={chef.id}>{chef.chef_name}</option>
                         ))}
                     </select>
-                    {formErrors.chef && <p className="text-sm text-red-500">{formErrors.chef}</p>}
+                    {formErrors.chef_id && <p className="text-sm text-red-500">{formErrors.chef_id}</p>}
                 </div>
 
                 <div>
@@ -288,12 +296,12 @@ export const AdminBoxes: React.FC<AdminBoxesProps> = ({ boxes, chefs, onAdd, onE
                     <input 
                         type="text" 
                         placeholder="رابط الصورة" 
-                        className={`w-full p-3 bg-gray-50 rounded-xl border ${formErrors.img ? 'border-red-500' : 'border-gray-200'} text-gray-900`}
-                        value={formData.img} 
-                        onChange={e => setFormData({...formData, img: e.target.value})}
+                        className={`w-full p-3 bg-gray-50 rounded-xl border ${formErrors.image_url ? 'border-red-500' : 'border-gray-200'} text-gray-900`}
+                        value={formData.image_url} 
+                        onChange={e => setFormData({...formData, image_url: e.target.value})}
                         disabled={isLoading}
                     />
-                    {formErrors.img && <p className="text-sm text-red-500">{formErrors.img}</p>}
+                    {formErrors.image_url && <p className="text-sm text-red-500">{formErrors.image_url}</p>}
                 </div>
 
                 <button 
