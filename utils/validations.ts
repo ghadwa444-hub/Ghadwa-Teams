@@ -116,6 +116,7 @@ export function validateProductPrice(price: string | number): ValidationResult {
 }
 
 export function validateProductCategory(category: string): ValidationResult {
+  // Accept both English and Arabic categories
   const validCategories = [
     'breakfast',
     'lunch',
@@ -123,14 +124,22 @@ export function validateProductCategory(category: string): ValidationResult {
     'dessert',
     'drinks',
     'appetizer',
+    'مشويات',
+    'محاشي',
+    'طواجن',
+    'أكل شعبي',
+    'حلويات',
+    'معجنات',
+    'مشروبات',
+    'مقبلات'
   ];
   if (!category || !category.trim()) {
     return { valid: false, error: 'Category is required' };
   }
-  if (!validCategories.includes(category.toLowerCase())) {
+  if (!validCategories.includes(category)) {
     return {
       valid: false,
-      error: `Category must be one of: ${validCategories.join(', ')}`,
+      error: `الفئة يجب أن تكون من القائمة المتاحة`,
     };
   }
   return { valid: true };

@@ -5,7 +5,8 @@ import { AdminFormModal } from '../Modals';
 import { MENU_CATEGORIES } from '../../constants';
 import { imageUploadService } from '../../services/imageUploadService';
 import { validateProductForm } from '../../utils/validations';
-import { supabase } from '../../services/supabase';
+import { api } from '../../services/api';
+import { logger } from '../../utils/logger';
 
 interface AdminMealsProps {
     meals: MenuItem[];
@@ -115,35 +116,37 @@ export const AdminMeals: React.FC<AdminMealsProps> = ({ meals, chefs, onAdd, onE
                 is_featured: false,
                 is_offer: false
             };
+            
+            console.log('📋 Submitting meal data:', mealData);
+            console.log('👨‍🍳 Available chefs:', chefs.length);
 
             if (currentMeal) {
-                // Update existing meal in database
-                const { data, error } = await supabase
-                    .from('products')
-                    .update(mealData)
-                    .eq('id', currentMeal.id)
-                    .select()
-                    .single();
-
-                if (error) throw error;
-                if (data) {
-                    const updatedMeal: MenuItem = { ...data };
-                    onEdit(updatedMeal);
+                // Update existing meal via API
+                const updatedMeal: MenuItem = {
+                    id: currentMeal.id,
+                    ...mealData
+                };
+                
+                const success = await api.updateMenuItem(updatedMeal);
+                if (!success) {
+                    throw new Error('Failed to update meal');
                 }
+                
+                onEdit(updatedMeal);
+                logger.info('ADMIN_MEALS', '✏️ Meal updated successfully', { mealId: currentMeal.id, mealName: mealData.name });
                 showNotification('success', 'تم تحديث الوجبة بنجاح! ✅');
             } else {
-                // Add new meal to database
-                const { data, error } = await supabase
-                    .from('products')
-                    .insert([mealData])
-                    .select()
-                    .single();
-
-                if (error) throw error;
-                if (data) {
-                    const newMeal: MenuItem = { ...data };
-                    onAdd(newMeal);
+                // Add new meal via API (returns the created meal with ID from DB)
+                const createdMeal = await api.addMenuItem({
+                    ...mealData
+                });
+                
+                if (!createdMeal) {
+                    throw new Error('Failed to add meal - no data returned from server');
                 }
+                
+                logger.info('ADMIN_MEALS', '➕ Meal added successfully', { mealId: createdMeal.id, mealName: mealData.name });
+                onAdd(createdMeal); // Add meal with real UUID from DB
                 showNotification('success', 'تم إضافة الوجبة بنجاح! ✅');
             }
 
@@ -160,14 +163,13 @@ export const AdminMeals: React.FC<AdminMealsProps> = ({ meals, chefs, onAdd, onE
     const handleDelete = async (id: string) => {
         try {
             setIsLoading(true);
-            const { error } = await supabase
-                .from('products')
-                .delete()
-                .eq('id', id);
-
-            if (error) throw error;
+            const success = await api.deleteMenuItem(id);
+            if (!success) {
+                throw new Error('Failed to delete meal');
+            }
             onDelete(id);
             setDeleteConfirm(null);
+            logger.info('ADMIN_MEALS', '🗑️ Meal deleted successfully', { mealId: id });
             showNotification('success', 'تم حذف الوجبة بنجاح! 🗑️');
         } catch (error) {
             console.error('Error deleting meal:', error);
@@ -338,19 +340,30 @@ export const AdminMeals: React.FC<AdminMealsProps> = ({ meals, chefs, onAdd, onE
                         {formErrors.category && <p className="text-red-500 text-xs">{formErrors.category}</p>}
                     </div>
 
-                    <select
-                        title="Select chef"
-                        className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 text-gray-900"
-                        value={formData.chef_id}
-                        onChange={e => setFormData({...formData, chef_id: e.target.value})}
-                        disabled={isLoading}
-                        required
-                    >
-                        <option value="" disabled>اختر الشيف</option>
-                        {chefs.map(chef => (
-                            <option key={chef.id} value={chef.id}>{chef.chef_name}</option>
-                        ))}
-                    </select>
+                    <div className="space-y-1">
+                        <select
+                            title="Select chef"
+                            className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 text-gray-900"
+                            value={formData.chef_id || ''}
+                            onChange={e => {
+                                console.log('Chef selected:', e.target.value);
+                                setFormData({...formData, chef_id: e.target.value});
+                            }}
+                            disabled={isLoading}
+                        >
+                            <option value="">اختر الشيف (اختياري)</option>
+                            {chefs.length === 0 ? (
+                                <option disabled>لا يوجد شيفات متاحة</option>
+                            ) : (
+                                chefs.map(chef => (
+                                    <option key={chef.id} value={chef.id}>{chef.chef_name}</option>
+                                ))
+                            )}
+                        </select>
+                        {chefs.length === 0 && (
+                            <p className="text-xs text-amber-600">⚠️ يجب إضافة شيفات أولاً من قائمة الشيفات</p>
+                        )}
+                    </div>
                 </div>
 
                 {/* Description */}

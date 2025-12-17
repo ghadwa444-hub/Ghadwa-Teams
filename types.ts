@@ -65,6 +65,10 @@ export interface Product {
   stock_quantity?: number;
   created_at?: string;
   updated_at?: string;
+  
+  // Legacy/computed fields (not in database, populated by UI)
+  chef?: string;        // Chef name (computed from chef_id lookup)
+  rating?: number;      // Product rating (could be from reviews)
 }
 
 /**
@@ -74,17 +78,36 @@ export interface Order {
   id: string;           // UUID
   customer_id?: string; // UUID
   chef_id?: string;     // UUID
+  order_number?: string; // GHD-xxx format
   status: 'pending' | 'confirmed' | 'preparing' | 'ready' | 'delivering' | 'delivered' | 'cancelled';
+  subtotal: number;     // Required in DB
+  delivery_fee?: number;
+  tax_amount?: number;
+  discount_amount: number;
   total_amount: number;
   delivery_address?: string;
   delivery_phone?: string;
+  delivery_notes?: string;
   customer_name?: string;
-  notes?: string;
+  customer_phone?: string;
+  payment_method?: string;
+  payment_status?: string;
   promo_code?: string;
-  discount_amount: number;
+  notes?: string;
   created_at?: string;
+  confirmed_at?: string;
+  delivered_at?: string;
+  cancelled_at?: string;
   updated_at?: string;
   items?: OrderItem[];  // Joined from order_items
+  
+  // Legacy fields (used by UI, not in DB)
+  customer?: string;    // Maps to customer_name
+  phone?: string;       // Maps to customer_phone
+  address?: string;     // Maps to delivery_address
+  date?: string;        // Maps to created_at
+  total?: number;       // Maps to total_amount
+  itemsDetails?: any[]; // Temporary cart items
 }
 
 /**

@@ -17,13 +17,13 @@ export const AllChefsPage: React.FC<AllChefsPageProps> = ({ chefs, onBack, onChe
     const filteredChefs = useMemo(() => {
         return chefs.filter(chef => {
             const matchesSearch =
-                chef.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                chef.specialty.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                chef.bio.toLowerCase().includes(searchTerm.toLowerCase());
+                chef.chef_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                (chef.specialty?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+                (chef.description?.toLowerCase() || '').includes(searchTerm.toLowerCase());
 
             const matchesStatus =
                 filterOpen === null ||
-                chef.isOpen === filterOpen;
+                chef.is_active === filterOpen;
 
             return matchesSearch && matchesStatus;
         });

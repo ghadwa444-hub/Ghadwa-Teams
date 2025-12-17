@@ -41,6 +41,37 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ cart, onBack, onPlac
             return;
         }
 
+        // Check if code is active
+        if (!code.is_active) {
+            setPromoError('الكود ده معطل حالياً');
+            setDiscount(0);
+            setAppliedPromo(null);
+            return;
+        }
+
+        // Check validity dates
+        const now = new Date();
+        if (code.valid_from && new Date(code.valid_from) > now) {
+            setPromoError('الكود ده لسه مبدأش');
+            setDiscount(0);
+            setAppliedPromo(null);
+            return;
+        }
+        if (code.valid_until && new Date(code.valid_until) < now) {
+            setPromoError('الكود ده منتهي');
+            setDiscount(0);
+            setAppliedPromo(null);
+            return;
+        }
+
+        // Check usage limit
+        if (code.max_uses && code.current_uses >= code.max_uses) {
+            setPromoError('الكود ده وصل للحد الأقصى من الاستخدام');
+            setDiscount(0);
+            setAppliedPromo(null);
+            return;
+        }
+
         // Check minimum order amount
         if (code.min_order_amount && subtotal < code.min_order_amount) {
             setPromoError(`الحد الأدنى للطلب ${code.min_order_amount} ج.م`);
@@ -182,7 +213,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ cart, onBack, onPlac
                              <div className="space-y-4 mb-6 max-h-60 overflow-y-auto custom-scrollbar">
                                  {cart.map(item => (
                                      <div key={item.id} className="flex gap-3">
-                                         <img src={item.img} alt={item.name} className="w-14 h-14 rounded-lg object-cover bg-gray-100" />
+                                         <img src={item.image_url || 'https://via.placeholder.com/100x100?text=Product'} alt={item.name} className="w-14 h-14 rounded-lg object-cover bg-gray-100" />
                                          <div className="flex-1">
                                              <div className="flex justify-between mb-1">
                                                  <span className="text-sm font-bold text-gray-900 line-clamp-1">{item.name}</span>

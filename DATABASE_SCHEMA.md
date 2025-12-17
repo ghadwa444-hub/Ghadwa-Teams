@@ -27,23 +27,29 @@ Stores user profile information linked to Supabase Auth users.
 | Column | Type | Nullable | Default | Description |
 |--------|------|----------|---------|-------------|
 | `id` | UUID | NO | - | Primary key, references auth.users |
-| `email` | TEXT | YES | - | User email |
-| `full_name` | TEXT | YES | - | User's full name |
-| `phone` | TEXT | YES | - | Phone number |
-| `role` | TEXT | YES | 'customer' | User role: 'admin', 'chef', 'customer' |
+| `full_name` | TEXT | NO | - | User's full name |
+| `whatsapp_number` | TEXT | NO | - | WhatsApp number (required) |
+| `delivery_address` | TEXT | YES | - | Default delivery address |
+| `role` | TEXT | NO | 'customer' | User role: 'admin', 'chef', 'customer' |
+| `is_active` | BOOLEAN | YES | true | Account active status |
 | `avatar_url` | TEXT | YES | - | Profile image URL |
+| `email` | TEXT | YES | - | User email (added by migration) |
+| `phone` | TEXT | YES | - | Phone number (added by migration) |
 | `created_at` | TIMESTAMPTZ | YES | now() | Creation timestamp |
 | `updated_at` | TIMESTAMPTZ | YES | now() | Last update timestamp |
 
 **TypeScript Interface:**
 ```typescript
 interface Profile {
-  id: string;          // UUID
-  email?: string;
-  full_name?: string;
-  phone?: string;
+  id: string;               // UUID
+  full_name: string;
+  whatsapp_number: string;
+  delivery_address?: string;
   role: 'admin' | 'chef' | 'customer';
+  is_active?: boolean;
   avatar_url?: string;
+  email?: string;           // Added by migration
+  phone?: string;           // Added by migration
   created_at?: string;
   updated_at?: string;
 }
@@ -98,20 +104,29 @@ interface Chef {
 
 Stores menu items (meals, dishes).
 
+**NOTE:** This table has dual field names (synced by migration):
+- `title` ↔ `name` (both exist, auto-synced)
+- `is_active` ↔ `is_available` (both exist, auto-synced)
+- `preparation_time` ↔ `prep_time` (both exist, auto-synced)
+
 | Column | Type | Nullable | Default | Description |
 |--------|------|----------|---------|-------------|
 | `id` | UUID | NO | gen_random_uuid() | Primary key |
 | `chef_id` | UUID | YES | - | References chefs.id |
-| `name` | TEXT | NO | - | Product name |
+| `title` | TEXT | NO | - | Product title (original field) |
+| `name` | TEXT | NO | - | Product name (added by migration, synced with title) |
 | `description` | TEXT | YES | - | Product description |
 | `price` | NUMERIC(10,2) | NO | - | Price in currency |
 | `image_url` | TEXT | YES | - | Product image URL |
-| `category` | TEXT | YES | - | Product category |
-| `is_available` | BOOLEAN | YES | true | Availability status |
-| `is_featured` | BOOLEAN | YES | false | Featured/best seller flag |
-| `is_offer` | BOOLEAN | YES | false | Special offer flag |
-| `offer_price` | NUMERIC(10,2) | YES | - | Discounted price if on offer |
-| `prep_time` | INTEGER | YES | - | Preparation time in minutes |
+| `category` | TEXT | NO | 'main' | Product category |
+| `is_active` | BOOLEAN | YES | true | Active status (original field) |
+| `is_available` | BOOLEAN | YES | true | Availability (added by migration, synced with is_active) |
+| `is_featured` | BOOLEAN | YES | false | Featured/best seller flag (added by migration) |
+| `is_offer` | BOOLEAN | YES | false | Special offer flag (added by migration) |
+| `offer_price` | NUMERIC(10,2) | YES | - | Discounted price if on offer (added by migration) |
+| `stock_quantity` | INTEGER | YES | 0 | Stock quantity |
+| `preparation_time` | INTEGER | YES | 30 | Preparation time in minutes (original field) |
+| `prep_time` | INTEGER | YES | - | Prep time (added by migration, synced with preparation_time) |
 | `created_at` | TIMESTAMPTZ | YES | now() | Creation timestamp |
 | `updated_at` | TIMESTAMPTZ | YES | now() | Last update timestamp |
 
@@ -120,18 +135,23 @@ Stores menu items (meals, dishes).
 interface Product {
   id: string;           // UUID
   chef_id?: string;     // UUID
-  name: string;
+  name: string;         // Use this (synced with 'title' in DB)
   description?: string;
   price: number;
   image_url?: string;
   category?: string;
-  is_available: boolean;
+  is_available: boolean; // Use this (synced with 'is_active' in DB)
   is_featured: boolean;
   is_offer: boolean;
   offer_price?: number;
-  prep_time?: number;
+  prep_time?: number;   // Use this (synced with 'preparation_time' in DB)
+  stock_quantity?: number;
   created_at?: string;
   updated_at?: string;
+  
+  // Legacy/computed fields (not in DB, populated by UI)
+  chef?: string;        // Chef name (computed from chef_id)
+  rating?: number;      // Product rating (from reviews)
 }
 ```
 
@@ -157,15 +177,26 @@ Stores customer orders.
 | `id` | UUID | NO | gen_random_uuid() | Primary key |
 | `customer_id` | UUID | YES | - | References profiles.id |
 | `chef_id` | UUID | YES | - | References chefs.id |
+| `order_number` | TEXT | NO | - | Unique order number (GHD-xxx) |
 | `status` | TEXT | YES | 'pending' | Order status |
+| `subtotal` | NUMERIC(10,2) | NO | - | Subtotal before fees |
+| `delivery_fee` | NUMERIC(10,2) | YES | 0 | Delivery cost |
+| `tax_amount` | NUMERIC(10,2) | YES | 0 | Tax amount |
 | `total_amount` | NUMERIC(10,2) | NO | - | Total order amount |
-| `delivery_address` | TEXT | YES | - | Delivery address |
+| `delivery_address` | TEXT | NO | - | Delivery address |
 | `delivery_phone` | TEXT | YES | - | Contact phone |
+| `delivery_notes` | TEXT | YES | - | Delivery instructions |
 | `customer_name` | TEXT | YES | - | Customer name |
-| `notes` | TEXT | YES | - | Special instructions |
+| `customer_phone` | TEXT | YES | - | Customer contact |
+| `payment_method` | TEXT | YES | 'cash' | Payment method (cash/card/online) |
+| `payment_status` | TEXT | YES | 'pending' | Payment status |
 | `promo_code` | TEXT | YES | - | Applied promo code |
 | `discount_amount` | NUMERIC(10,2) | YES | 0 | Discount applied |
+| `notes` | TEXT | YES | - | Special instructions (added by migration) |
 | `created_at` | TIMESTAMPTZ | YES | now() | Order creation time |
+| `confirmed_at` | TIMESTAMPTZ | YES | - | Order confirmation time |
+| `delivered_at` | TIMESTAMPTZ | YES | - | Delivery completion time |
+| `cancelled_at` | TIMESTAMPTZ | YES | - | Cancellation time |
 | `updated_at` | TIMESTAMPTZ | YES | now() | Last update timestamp |
 
 **Order Status Values:**
@@ -183,15 +214,26 @@ interface Order {
   id: string;           // UUID
   customer_id?: string; // UUID
   chef_id?: string;     // UUID
+  order_number?: string;
   status: 'pending' | 'confirmed' | 'preparing' | 'ready' | 'delivering' | 'delivered' | 'cancelled';
+  subtotal?: number;
+  delivery_fee?: number;
+  tax_amount?: number;
   total_amount: number;
   delivery_address?: string;
   delivery_phone?: string;
+  delivery_notes?: string;
   customer_name?: string;
-  notes?: string;
+  customer_phone?: string;
+  payment_method?: string;
+  payment_status?: string;
   promo_code?: string;
   discount_amount: number;
+  notes?: string;       // Added by migration, syncs with delivery_notes
   created_at?: string;
+  confirmed_at?: string;
+  delivered_at?: string;
+  cancelled_at?: string;
   updated_at?: string;
   items?: OrderItem[];  // Joined from order_items
 }
@@ -236,9 +278,11 @@ interface OrderItem {
 
 Stores subscription/meal box offerings.
 
+**⚠️ IMPORTANT:** This table uses `BIGINT` (number) for `id`, NOT UUID!
+
 | Column | Type | Nullable | Default | Description |
 |--------|------|----------|---------|-------------|
-| `id` | UUID | NO | gen_random_uuid() | Primary key |
+| `id` | BIGINT | NO | - | Primary key (numeric, NOT UUID) |
 | `name` | TEXT | NO | - | Box name |
 | `description` | TEXT | YES | - | Box description |
 | `price` | NUMERIC(10,2) | NO | - | Box price |
@@ -248,16 +292,39 @@ Stores subscription/meal box offerings.
 | `created_at` | TIMESTAMPTZ | YES | now() | Creation timestamp |
 | `updated_at` | TIMESTAMPTZ | YES | now() | Last update timestamp |
 
+**Legacy fields (also present in actual database):**
+| Column | Type | Description |
+|--------|------|-------------|
+| `serves` | TEXT | Serving size description |
+| `chef` | TEXT | Chef/kitchen name |
+| `items` | TEXT[] | Array of item names |
+| `img` | TEXT | Legacy image URL |
+| `color` | TEXT | Box theme color |
+| `accent` | TEXT | Accent color |
+| `badge` | TEXT | Badge text |
+| `category` | TEXT | Box category |
+
 **TypeScript Interface:**
 ```typescript
 interface Box {
-  id: string;           // UUID
+  id: number;           // BIGINT (not UUID!)
   name: string;
   description?: string;
   price: number;
   image_url?: string;
   items_count?: number;
-  is_active: boolean;
+  is_active?: boolean;
+  
+  // Legacy fields (original schema)
+  serves?: string;
+  chef?: string;
+  items?: string[];
+  img?: string;
+  color?: string;
+  accent?: string;
+  badge?: string;
+  category?: string;
+  
   created_at?: string;
   updated_at?: string;
 }
@@ -360,11 +427,14 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- Profiles table
 CREATE TABLE IF NOT EXISTS public.profiles (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-  email TEXT,
-  full_name TEXT,
-  phone TEXT,
-  role TEXT DEFAULT 'customer',
+  full_name TEXT NOT NULL,
+  whatsapp_number TEXT NOT NULL CHECK (whatsapp_number ~ '^\+?[1-9]\d{1,14}$'),
+  delivery_address TEXT,
+  role TEXT NOT NULL DEFAULT 'customer' CHECK (role IN ('customer', 'admin', 'chef')),
+  is_active BOOLEAN DEFAULT true,
   avatar_url TEXT,
+  email TEXT,
+  phone TEXT,
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now()
 );
@@ -384,18 +454,24 @@ CREATE TABLE IF NOT EXISTS public.chefs (
 );
 
 -- Products table
+-- NOTE: Has dual field names (title/name, is_active/is_available, preparation_time/prep_time)
+-- Migration keeps both and syncs them automatically
 CREATE TABLE IF NOT EXISTS public.products (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   chef_id UUID REFERENCES public.chefs(id) ON DELETE SET NULL,
+  title TEXT NOT NULL,
   name TEXT NOT NULL,
   description TEXT,
-  price NUMERIC(10,2) NOT NULL,
+  price NUMERIC(10,2) NOT NULL CHECK (price >= 0),
   image_url TEXT,
-  category TEXT,
+  category TEXT NOT NULL DEFAULT 'main',
+  is_active BOOLEAN DEFAULT true,
   is_available BOOLEAN DEFAULT true,
   is_featured BOOLEAN DEFAULT false,
   is_offer BOOLEAN DEFAULT false,
   offer_price NUMERIC(10,2),
+  stock_quantity INTEGER DEFAULT 0 CHECK (stock_quantity >= 0),
+  preparation_time INTEGER DEFAULT 30,
   prep_time INTEGER,
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now()
@@ -406,15 +482,26 @@ CREATE TABLE IF NOT EXISTS public.orders (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   customer_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
   chef_id UUID REFERENCES public.chefs(id) ON DELETE SET NULL,
-  status TEXT DEFAULT 'pending',
-  total_amount NUMERIC(10,2) NOT NULL,
-  delivery_address TEXT,
+  order_number TEXT NOT NULL UNIQUE,
+  status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'confirmed', 'preparing', 'out_for_delivery', 'delivered', 'cancelled')),
+  subtotal NUMERIC(10,2) NOT NULL CHECK (subtotal >= 0),
+  delivery_fee NUMERIC(10,2) DEFAULT 0 CHECK (delivery_fee >= 0),
+  tax_amount NUMERIC(10,2) DEFAULT 0 CHECK (tax_amount >= 0),
+  total_amount NUMERIC(10,2) NOT NULL CHECK (total_amount >= 0),
+  delivery_address TEXT NOT NULL,
   delivery_phone TEXT,
+  delivery_notes TEXT,
   customer_name TEXT,
-  notes TEXT,
+  customer_phone TEXT,
+  payment_method TEXT DEFAULT 'cash' CHECK (payment_method IN ('cash', 'card', 'online')),
+  payment_status TEXT DEFAULT 'pending' CHECK (payment_status IN ('pending', 'paid', 'refunded')),
   promo_code TEXT,
-  discount_amount NUMERIC(10,2) DEFAULT 0,
+  discount_amount NUMERIC(10,2) DEFAULT 0 CHECK (discount_amount >= 0),
+  notes TEXT,
   created_at TIMESTAMPTZ DEFAULT now(),
+  confirmed_at TIMESTAMPTZ,
+  delivered_at TIMESTAMPTZ,
+  cancelled_at TIMESTAMPTZ,
   updated_at TIMESTAMPTZ DEFAULT now()
 );
 
@@ -432,14 +519,26 @@ CREATE TABLE IF NOT EXISTS public.order_items (
 );
 
 -- Boxes table
+-- NOTE: This table uses BIGINT for id (not UUID) to match existing database
 CREATE TABLE IF NOT EXISTS public.boxes (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  id BIGINT PRIMARY KEY,
   name TEXT NOT NULL,
-  description TEXT,
-  price NUMERIC(10,2) NOT NULL,
+  price NUMERIC NOT NULL,
+  serves TEXT NOT NULL,
+  chef TEXT NOT NULL,
+  items TEXT[] NOT NULL,
+  img TEXT,
+  color TEXT,
+  accent TEXT,
+  badge TEXT,
+  category TEXT,
+  
+  -- New migration fields
   image_url TEXT,
+  description TEXT,
   items_count INTEGER,
   is_active BOOLEAN DEFAULT true,
+  
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now()
 );

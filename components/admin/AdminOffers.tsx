@@ -197,12 +197,11 @@ export const AdminOffers: React.FC<AdminOffersProps> = ({ offers, chefs, onAdd, 
                 <select 
                     title="Select chef"
                     className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 text-gray-900" 
-                    value={formData.chef_id} 
+                    value={formData.chef_id || ''} 
                     onChange={e => setFormData({...formData, chef_id: e.target.value})}
                     disabled={isLoading}
-                    required
                 >
-                    <option value="" disabled>اختر الشيف</option>
+                    <option value="">اختر الشيف (اختياري)</option>
                     {chefs.map(chef => (
                         <option key={chef.id} value={chef.id}>{chef.chef_name}</option>
                     ))}

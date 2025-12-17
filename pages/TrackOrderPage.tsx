@@ -36,7 +36,7 @@ export const TrackOrderPage: React.FC<TrackOrderPageProps> = ({ orders, initialO
     const getStatusStep = (status: string) => {
         switch (status) {
             case 'pending': return 1;
-            case 'cooking': return 2;
+            case 'preparing': return 2;
             case 'out_for_delivery': return 3;
             case 'delivered': return 4;
             default: return 0;
@@ -114,12 +114,12 @@ export const TrackOrderPage: React.FC<TrackOrderPageProps> = ({ orders, initialO
                                                     <span className={`px-3 py-1 rounded-full text-xs font-bold block mb-1 w-fit ml-auto ${
                                                         order.status === 'delivered' ? 'bg-green-100 text-green-700' :
                                                         order.status === 'out_for_delivery' ? 'bg-blue-100 text-blue-700' :
-                                                        order.status === 'cooking' ? 'bg-orange-100 text-orange-700' :
+                                                        order.status === 'preparing' ? 'bg-orange-100 text-orange-700' :
                                                         'bg-yellow-100 text-yellow-700'
                                                     }`}>
                                                         {order.status === 'delivered' ? 'مكتمل' : 
                                                          order.status === 'out_for_delivery' ? 'مع الطيار' :
-                                                         order.status === 'cooking' ? 'جاري التحضير' : 'قيد الانتظار'}
+                                                         order.status === 'preparing' ? 'جاري التحضير' : 'قيد الانتظار'}
                                                     </span>
                                                     <span className="font-bold text-[#8B2525] text-sm">{order.total_amount} ج.م</span>
                                                 </div>
@@ -172,7 +172,7 @@ export const TrackOrderPage: React.FC<TrackOrderPageProps> = ({ orders, initialO
                                 <h2 className="text-2xl font-bold">
                                     {foundOrder.status === 'delivered' ? 'تم التوصيل بنجاح 🎉' : 
                                      foundOrder.status === 'out_for_delivery' ? 'طلبك مع الطيار وفي الطريق ليك 🛵' :
-                                     foundOrder.status === 'cooking' ? 'الشيف بيجهز طلبك 👩‍🍳' : 
+                                     foundOrder.status === 'preparing' ? 'الشيف بيجهز طلبك 👩‍🍳' : 
                                      'طلبك وصل وقيد المراجعة 🕒'}
                                 </h2>
                             </div>

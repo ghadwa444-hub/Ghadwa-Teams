@@ -61,7 +61,7 @@ const OrderCard: React.FC<OrderCardProps & { isLoading: boolean; onStatusChange:
             
             {order.status === 'pending' && (
                 <button 
-                    onClick={() => handleStatusChange('cooking')} 
+                    onClick={() => handleStatusChange('preparing')} 
                     disabled={isPending}
                     className="bg-orange-100 text-orange-700 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-orange-200 transition flex items-center gap-1 disabled:opacity-50"
                 >
@@ -69,7 +69,7 @@ const OrderCard: React.FC<OrderCardProps & { isLoading: boolean; onStatusChange:
                     بدء التحضير
                 </button>
             )}
-            {order.status === 'cooking' && (
+            {order.status === 'preparing' && (
                 <button 
                     onClick={() => handleStatusChange('out_for_delivery')} 
                     disabled={isPending}
@@ -234,12 +234,12 @@ export const AdminOrders: React.FC<AdminOrdersProps> = ({ orders, updateOrderSta
                                         <span className={`px-3 py-1 rounded-full text-xs font-bold ${
                                                 order.status === 'delivered' ? 'bg-green-100 text-green-700' :
                                                 order.status === 'out_for_delivery' ? 'bg-blue-100 text-blue-700' :
-                                                order.status === 'cooking' ? 'bg-orange-100 text-orange-700' :
+                                                order.status === 'preparing' ? 'bg-orange-100 text-orange-700' :
                                                 'bg-yellow-100 text-yellow-700'
                                             }`}>
                                                 {order.status === 'delivered' ? 'تم التوصيل' : 
                                                  order.status === 'out_for_delivery' ? 'مع الطيار' :
-                                                 order.status === 'cooking' ? 'جاري التحضير' : 'قيد الانتظار'}
+                                                 order.status === 'preparing' ? 'جاري التحضير' : 'قيد الانتظار'}
                                         </span>
                                     </td>
                                     <td className="p-5 flex gap-2">
@@ -254,7 +254,7 @@ export const AdminOrders: React.FC<AdminOrdersProps> = ({ orders, updateOrderSta
                                             className="bg-white border border-gray-200 rounded-lg px-2 py-1 text-sm focus:border-[#8B2525] focus:ring-0 outline-none text-gray-900 cursor-pointer disabled:opacity-50"
                                         >
                                             <option value="pending">قيد الانتظار</option>
-                                            <option value="cooking">جاري التحضير</option>
+                                            <option value="preparing">جاري التحضير</option>
                                             <option value="out_for_delivery">تم الاستلام من الدليفري</option>
                                             <option value="delivered">تم التوصيل</option>
                                         </select>
@@ -307,11 +307,11 @@ export const AdminOrders: React.FC<AdminOrdersProps> = ({ orders, updateOrderSta
                                 <i className="fa-solid fa-fire-burner"></i> التحضير
                             </h3>
                             <span className="bg-white px-2 py-1 rounded-lg text-xs font-bold text-orange-800 shadow-sm border border-orange-100">
-                                {orders.filter(o => o.status === 'cooking').length}
+                                {orders.filter(o => o.status === 'preparing').length}
                             </span>
                         </div>
                         <div className="p-4 overflow-y-auto flex-1 custom-scrollbar space-y-3">
-                            {orders.filter(o => o.status === 'cooking').map(order => (
+                            {orders.filter(o => o.status === 'preparing').map(order => (
                                 <OrderCard 
                                     key={order.id} 
                                     order={order} 

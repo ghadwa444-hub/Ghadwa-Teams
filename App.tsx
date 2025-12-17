@@ -676,7 +676,7 @@ const App = () => {
                             onBack={() => setActivePage('home')}
                             cart={cart}
                             updateQuantity={updateQuantity}
-                            meals={menuItems.filter(m => m.chef === selectedChef.name)}
+                            meals={menuItems.filter(m => m.chef_id === selectedChef.id)}
                          />
                     )}
 

@@ -24,7 +24,7 @@ export const ChefDetailsPage: React.FC<ChefDetailsPageProps> = ({ chef, onBack, 
         <div className="min-h-screen bg-gray-50 pt-24 pb-20 animate-fade-in">
              {/* Header Image */}
              <div className="h-64 md:h-80 w-full relative">
-                 <img src={chef.cover} alt={chef.name} className="w-full h-full object-cover" />
+                 <img src={chef.image_url || 'https://images.unsplash.com/photo-1556910103-1c02745aae4d?w=800&q=80'} alt={chef.chef_name} className="w-full h-full object-cover" />
                  <div className="absolute inset-0 bg-gradient-to-t from-gray-900/80 to-transparent"></div>
                  <button onClick={onBack} className="absolute top-8 right-8 bg-white/20 backdrop-blur-md text-white w-10 h-10 rounded-full flex items-center justify-center hover:bg-white/30 transition z-10 border border-white/30">
                      <i className="fa-solid fa-arrow-right"></i>
@@ -35,37 +35,36 @@ export const ChefDetailsPage: React.FC<ChefDetailsPageProps> = ({ chef, onBack, 
                  <div className="bg-white rounded-3xl shadow-xl p-6 md:p-8 relative z-10">
                      <div className="flex flex-col md:flex-row gap-6 items-start">
                          <div className="w-32 h-32 md:w-40 md:h-40 rounded-3xl border-4 border-white shadow-lg -mt-16 md:-mt-20 bg-white overflow-hidden shrink-0">
-                            <img src={chef.img} alt={chef.name} className="w-full h-full object-cover" />
+                            <img src={chef.image_url || 'https://images.unsplash.com/photo-1556910103-1c02745aae4d?w=400&q=80'} alt={chef.chef_name} className="w-full h-full object-cover" />
                          </div>
                          
                          <div className="flex-1 w-full">
                              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
                                  <div>
                                      <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
-                                         {chef.name}
+                                         {chef.chef_name}
                                          <i className="fa-solid fa-circle-check text-blue-500 text-xl" title="شيف موثق"></i>
                                      </h1>
-                                     <p className="text-[#8B2525] font-bold text-lg mt-1">{chef.specialty}</p>
+                                     <p className="text-[#8B2525] font-bold text-lg mt-1">{chef.specialty || 'شيف محترف'}</p>
                                  </div>
                                  <div className="flex gap-3">
                                      <div className="text-center bg-green-50 px-4 py-2 rounded-xl border border-green-100">
-                                         <div className="font-bold text-green-700 text-lg">{chef.isOpen ? 'مفتوح' : 'مغلق'}</div>
+                                         <div className="font-bold text-green-700 text-lg">{chef.is_active ? 'مفتوح' : 'مغلق'}</div>
                                          <div className="text-xs text-green-600">الحالة</div>
                                      </div>
                                      <div className="text-center bg-yellow-50 px-4 py-2 rounded-xl border border-yellow-100">
                                          <div className="font-bold text-yellow-700 text-lg flex items-center justify-center gap-1">
-                                             {chef.rating} <i className="fa-solid fa-star text-sm"></i>
+                                             {chef.rating || 5.0} <i className="fa-solid fa-star text-sm"></i>
                                          </div>
-                                         <div className="text-xs text-yellow-600">{chef.reviews} تقييم</div>
+                                         <div className="text-xs text-yellow-600">التقييم</div>
                                      </div>
                                  </div>
                              </div>
-                             <p className="text-gray-600 leading-relaxed max-w-3xl">{chef.bio}</p>
+                             <p className="text-gray-600 leading-relaxed max-w-3xl">{chef.description || 'شيف متخصص في تقديم أشهى الأطباق بجودة عالية'}</p>
                              
                              <div className="flex flex-wrap gap-4 mt-6 text-sm text-gray-500">
-                                 <span className="flex items-center gap-2 bg-gray-50 px-3 py-1 rounded-lg"><i className="fa-regular fa-clock"></i> {chef.workingHours}</span>
-                                 <span className="flex items-center gap-2 bg-gray-50 px-3 py-1 rounded-lg"><i className="fa-solid fa-truck-fast"></i> توصيل خلال {chef.deliveryTime}</span>
-                                 <span className="flex items-center gap-2 bg-gray-50 px-3 py-1 rounded-lg"><i className="fa-solid fa-bag-shopping"></i> {chef.orders} طلب مكتمل</span>
+                                 <span className="flex items-center gap-2 bg-gray-50 px-3 py-1 rounded-lg"><i className="fa-regular fa-clock"></i> يوميًا 10ص - 10م</span>
+                                 <span className="flex items-center gap-2 bg-gray-50 px-3 py-1 rounded-lg"><i className="fa-solid fa-truck-fast"></i> توصيل خلال 30-45 دقيقة</span>
                              </div>
                          </div>
                      </div>
@@ -97,7 +96,7 @@ export const ChefDetailsPage: React.FC<ChefDetailsPageProps> = ({ chef, onBack, 
                                     {chefMeals.map(meal => (
                                         <div key={meal.id} className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex gap-4 hover:shadow-md transition group h-full">
                                             <div className="w-32 h-32 shrink-0 rounded-xl overflow-hidden relative">
-                                                <img src={meal.img} alt={meal.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                                                <img src={meal.image_url || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&q=80'} alt={meal.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                                             </div>
                                             <div className="flex-1 flex flex-col justify-between">
                                                 <div>
@@ -105,13 +104,13 @@ export const ChefDetailsPage: React.FC<ChefDetailsPageProps> = ({ chef, onBack, 
                                                         <h3 className="font-bold text-gray-900 text-lg">{meal.name}</h3>
                                                         <span className="font-bold text-[#8B2525] text-lg">{meal.price} ج.م</span>
                                                     </div>
-                                                    <p className="text-gray-500 text-sm line-clamp-2 mb-3">{meal.desc}</p>
+                                                    <p className="text-gray-500 text-sm line-clamp-2 mb-3">{meal.description}</p>
                                                 </div>
                                                 <div className="flex items-end justify-between">
                                                     <div className="text-xs text-gray-400">
                                                         <div className="flex items-center gap-1 mb-1"><i className="fa-regular fa-clock"></i> {meal.time || "45 د"}</div>
                                                     </div>
-                                                    <AddToCartButton item={{...meal, chef: chef.name}} cart={cart} updateQuantity={updateQuantity} className="h-10 px-6" disabled={!chef.isOpen} />
+                                                    <AddToCartButton item={{...meal, chef: chef.chef_name}} cart={cart} updateQuantity={updateQuantity} className="h-10 px-6" disabled={!chef.is_active} />
                                                 </div>
                                             </div>
                                         </div>
@@ -132,24 +131,13 @@ export const ChefDetailsPage: React.FC<ChefDetailsPageProps> = ({ chef, onBack, 
                             <div className="w-16 h-16 bg-yellow-50 text-yellow-500 rounded-full flex items-center justify-center text-3xl mx-auto mb-4">
                                 <i className="fa-solid fa-star"></i>
                             </div>
-                            <h3 className="text-xl font-bold text-gray-900">تقييم ممتاز {chef.rating}</h3>
-                            <p className="text-gray-500 mt-2">بناءً على {chef.reviews} رأي من العملاء</p>
+                            <h3 className="text-xl font-bold text-gray-900">تقييم ممتاز {chef.rating || 5.0}</h3>
+                            <p className="text-gray-500 mt-2">قريبًا هنعرض آراء العملاء</p>
                             
-                            <div className="mt-8 space-y-4 text-right max-w-2xl mx-auto">
-                                <div className="p-4 bg-gray-50 rounded-xl">
-                                    <div className="flex justify-between items-center mb-2">
-                                        <span className="font-bold">منى أحمد</span>
-                                        <div className="text-yellow-400 text-xs"><i className="fa-solid fa-star"></i><i className="fa-solid fa-star"></i><i className="fa-solid fa-star"></i><i className="fa-solid fa-star"></i><i className="fa-solid fa-star"></i></div>
-                                    </div>
-                                    <p className="text-gray-600 text-sm">الأكل تحفة بجد وتسلم ايدك يا شيف، المحشي كان سخن ومظبوط جداً.</p>
-                                </div>
-                                <div className="p-4 bg-gray-50 rounded-xl">
-                                    <div className="flex justify-between items-center mb-2">
-                                        <span className="font-bold">كريم محمود</span>
-                                        <div className="text-yellow-400 text-xs"><i className="fa-solid fa-star"></i><i className="fa-solid fa-star"></i><i className="fa-solid fa-star"></i><i className="fa-solid fa-star"></i></div>
-                                    </div>
-                                    <p className="text-gray-600 text-sm">ممتاز بس التوصيل اتأخر 10 دقايق، بس الأكل يستاهل.</p>
-                                </div>
+                            {/* Reviews will be dynamically loaded from database in future */}
+                            <div className="mt-8 text-gray-400">
+                                <i className="fa-regular fa-comment-dots text-4xl mb-3"></i>
+                                <p>لا توجد تقييمات بعد</p>
                             </div>
                         </div>
                      )}

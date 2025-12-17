@@ -12,7 +12,7 @@ interface AdminPromoCodesProps {
 
 export const AdminPromoCodes: React.FC<AdminPromoCodesProps> = ({ promoCodes, onAdd, onDelete }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [formData, setFormData] = useState<any>({ code: '', discount_percent: '', min_order_amount: '', max_uses: '' });
+    const [formData, setFormData] = useState<any>({ code: '', discount_type: 'percentage', discount_value: '', min_order_amount: '', max_uses: '' });
     const [isLoading, setIsLoading] = useState(false);
     const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
@@ -27,7 +27,7 @@ export const AdminPromoCodes: React.FC<AdminPromoCodesProps> = ({ promoCodes, on
     );
 
     const openAdd = () => {
-        setFormData({ code: '', discount_percent: '', min_order_amount: '0', max_uses: '' });
+        setFormData({ code: '', discount_type: 'percentage', discount_value: '', min_order_amount: '0', max_uses: '' });
         setIsModalOpen(true);
     };
 
@@ -38,9 +38,11 @@ export const AdminPromoCodes: React.FC<AdminPromoCodesProps> = ({ promoCodes, on
         try {
             const promoData = {
                 code: formData.code.toUpperCase(),
-                discount_percent: Number(formData.discount_percent),
+                discount_type: formData.discount_type || 'percentage',
+                discount_value: Number(formData.discount_value),
                 min_order_amount: Number(formData.min_order_amount) || 0,
                 max_uses: formData.max_uses ? Number(formData.max_uses) : null,
+                current_uses: 0,
                 is_active: true
             };
 
@@ -110,7 +112,7 @@ export const AdminPromoCodes: React.FC<AdminPromoCodesProps> = ({ promoCodes, on
                                     </td>
                                     <td className="p-4 font-bold text-[#8B2525] font-mono text-lg">{promo.code}</td>
                                     <td className="p-4 font-bold">
-                                        {promo.discount_percent}%
+                                        {promo.discount_type === 'percentage' ? `${promo.discount_value}%` : `${promo.discount_value} ج.م`}
                                     </td>
                                     <td className="p-4 text-sm text-gray-600">
                                         {promo.min_order_amount} ج.م
@@ -151,29 +153,39 @@ export const AdminPromoCodes: React.FC<AdminPromoCodesProps> = ({ promoCodes, on
                     disabled={isLoading}
                     required 
                 />
-                <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-4">
+                    <select 
+                        className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 text-gray-900"
+                        value={formData.discount_type}
+                        onChange={e => setFormData({...formData, discount_type: e.target.value})}
+                        disabled={isLoading}
+                        required
+                    >
+                        <option value="percentage">نسبة مئوية (%)</option>
+                        <option value="fixed">مبلغ ثابت (ج.م)</option>
+                    </select>
                     <input 
                         type="number" 
-                        placeholder="نسبة الخصم (%)" 
+                        placeholder={formData.discount_type === 'percentage' ? "نسبة الخصم (مثال: 20)" : "مبلغ الخصم (مثال: 50)"} 
                         className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 text-gray-900" 
-                        value={formData.discount_percent} 
-                        onChange={e => setFormData({...formData, discount_percent: e.target.value})} 
+                        value={formData.discount_value} 
+                        onChange={e => setFormData({...formData, discount_value: e.target.value})} 
                         disabled={isLoading}
                         min="0"
-                        max="100"
-                        required 
-                    />
-                    <input 
-                        type="number" 
-                        placeholder="الحد الأدنى للطلب (ج.م)" 
-                        className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 text-gray-900" 
-                        value={formData.min_order_amount} 
-                        onChange={e => setFormData({...formData, min_order_amount: e.target.value})} 
-                        disabled={isLoading}
-                        min="0"
+                        max={formData.discount_type === 'percentage' ? "100" : undefined}
                         required 
                     />
                 </div>
+                <input 
+                    type="number" 
+                    placeholder="الحد الأدنى للطلب (ج.م)" 
+                    className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 text-gray-900" 
+                    value={formData.min_order_amount} 
+                    onChange={e => setFormData({...formData, min_order_amount: e.target.value})} 
+                    disabled={isLoading}
+                    min="0"
+                    required 
+                />
                 <input 
                     type="number" 
                     placeholder="عدد الاستخدامات المسموحة (اختياري - اتركه فارغاً للاستخدام غير المحدود)" 

@@ -14,7 +14,7 @@ interface AdminDashboardProps {
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({ orders, chefs, mealsCount, offersCount, visitorsCount }) => {
     // Basic Calculations
     const totalRevenue = orders.reduce((acc, curr) => acc + (Number(curr.total) || 0), 0);
-    const activeOrders = orders.filter(o => o.status === 'pending' || o.status === 'cooking' || o.status === 'out_for_delivery').length;
+    const activeOrders = orders.filter(o => o.status === 'pending' || o.status === 'preparing' || o.status === 'out_for_delivery').length;
     const completedOrders = orders.filter(o => o.status === 'delivered').length;
     
     // New Calculations for requested stats
@@ -24,12 +24,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ orders, chefs, m
     
     // Percentages for Charts
     const pendingCount = orders.filter(o => o.status === 'pending').length;
-    const cookingCount = orders.filter(o => o.status === 'cooking').length;
+    const preparingCount = orders.filter(o => o.status === 'preparing').length;
     const deliveryCount = orders.filter(o => o.status === 'out_for_delivery').length;
     
     const totalOrders = orders.length || 1; // Avoid division by zero
     const pendingPct = Math.round((pendingCount / totalOrders) * 100);
-    const cookingPct = Math.round((cookingCount / totalOrders) * 100);
+    const preparingPct = Math.round((preparingCount / totalOrders) * 100);
     const deliveryPct = Math.round((deliveryCount / totalOrders) * 100);
     const completedPct = Math.round((completedOrders / totalOrders) * 100);
 
@@ -164,7 +164,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ orders, chefs, m
                         <div className="flex h-4 w-full rounded-full overflow-hidden bg-gray-100 mb-4">
                             <div style={{ width: `${completedPct}%` }} className="bg-green-500 h-full" title="مكتمل"></div>
                             <div style={{ width: `${deliveryPct}%` }} className="bg-blue-500 h-full" title="توصيل"></div>
-                            <div style={{ width: `${cookingPct}%` }} className="bg-orange-500 h-full" title="تحضير"></div>
+                            <div style={{ width: `${preparingPct}%` }} className="bg-orange-500 h-full" title="تحضير"></div>
                             <div style={{ width: `${pendingPct}%` }} className="bg-yellow-400 h-full" title="انتظار"></div>
                         </div>
 
@@ -179,7 +179,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ orders, chefs, m
                             </div>
                             <div className="flex items-center gap-2">
                                 <span className="w-3 h-3 rounded-full bg-orange-500"></span>
-                                <span className="text-gray-600">تحضير ({cookingPct}%)</span>
+                                <span className="text-gray-600">تحضير ({preparingPct}%)</span>
                             </div>
                             <div className="flex items-center gap-2">
                                 <span className="w-3 h-3 rounded-full bg-yellow-400"></span>
@@ -192,10 +192,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ orders, chefs, m
                     <div className="bg-gradient-to-br from-[#8B2525] to-[#5e1818] rounded-2xl shadow-lg p-6 text-white relative overflow-hidden">
                         <div className="absolute top-0 right-0 w-32 h-32 bg-white opacity-5 rounded-full -mr-10 -mt-10"></div>
                         <div className="relative z-10 flex items-center gap-4">
-                            <img src={topChef.img || ""} alt="Top Chef" className="w-16 h-16 rounded-full border-2 border-white/50 object-cover" />
+                            <img src={topChef.img || topChef.image_url || '/placeholder.jpg'} alt="Top Chef" className="w-16 h-16 rounded-full border-2 border-white/50 object-cover" />
                             <div>
                                 <p className="text-white/60 text-xs font-bold uppercase tracking-wider mb-1">شيف الشهر 🏆</p>
-                                <h3 className="font-bold text-lg">{topChef.name}</h3>
+                                <h3 className="font-bold text-lg">{topChef.chef_name || topChef.name}</h3>
                                 <div className="flex items-center gap-1 text-yellow-400 text-sm mt-1">
                                     <i className="fa-solid fa-star"></i> {topChef.rating || 5.0}
                                 </div>

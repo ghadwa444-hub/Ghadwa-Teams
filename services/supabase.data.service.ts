@@ -33,6 +33,46 @@ export class SupabaseDataService {
     }
   }
 
+  // Helper: Validate UUID (basic v4 format check)
+  private isValidUUID(id: string | undefined | null): boolean {
+    if (!id || typeof id !== 'string') return false;
+    const uuidV4 = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    return uuidV4.test(id);
+  }
+
+  // Helper: Keep only allowed chef fields to avoid sending unexpected columns
+  private sanitizeChefPayload(chef: Partial<Chef>): Partial<Chef> {
+    const allowed: (keyof Chef)[] = ['chef_name', 'specialty', 'description', 'image_url', 'is_active', 'rating', 'profile_id'];
+    const out: Partial<Chef> = {};
+    for (const key of allowed) {
+      if (chef[key] !== undefined) out[key] = chef[key];
+    }
+    return out;
+  }
+
+  // Helper: Keep only allowed product fields to avoid sending unexpected columns
+  private sanitizeProductPayload(product: Partial<Product>): any {
+    const allowed: (keyof Product)[] = ['name', 'description', 'price', 'image_url', 'category', 'is_available', 'is_featured', 'is_offer', 'offer_price', 'prep_time', 'stock_quantity', 'chef_id'];
+    const out: any = {};
+    for (const key of allowed) {
+      if (product[key] !== undefined) out[key] = product[key];
+    }
+    
+    // Database has dual fields (title ↔ name, is_active ↔ is_available, preparation_time ↔ prep_time)
+    // Sync them for backward compatibility
+    if (product.name !== undefined) {
+      out.title = product.name; // Sync name → title (title is NOT NULL in DB)
+    }
+    if (product.is_available !== undefined) {
+      out.is_active = product.is_available; // Sync is_available → is_active
+    }
+    if (product.prep_time !== undefined) {
+      out.preparation_time = product.prep_time; // Sync prep_time → preparation_time
+    }
+    
+    return out;
+  }
+
   async getChef(id: string): Promise<Chef | null> {
     try {
       const { data, error } = await supabase
@@ -53,9 +93,12 @@ export class SupabaseDataService {
     try {
       logger.info('SUPABASE', '➕ Creating chef...');
 
+      // Sanitize payload to avoid sending unknown columns (eg. badges, name, img)
+      const payload = this.sanitizeChefPayload(chef);
+
       const { data, error } = await supabase
         .from('chefs')
-        .insert([chef])
+        .insert([payload])
         .select()
         .single();
 
@@ -73,12 +116,19 @@ export class SupabaseDataService {
     try {
       logger.info('SUPABASE', '📝 Updating chef...', { id });
 
+      if (!this.isValidUUID(id)) {
+        throw new Error(`Invalid chef id (expected UUID): ${id}`);
+      }
+
+      const payload = this.sanitizeChefPayload(updates);
+
+      // Use maybeSingle to avoid throwing when 0 rows are returned
       const { data, error } = await supabase
         .from('chefs')
-        .update(updates)
+        .update(payload)
         .eq('id', id)
         .select()
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
 
@@ -93,6 +143,10 @@ export class SupabaseDataService {
   async deleteChef(id: string): Promise<boolean> {
     try {
       logger.info('SUPABASE', '🗑️ Deleting chef...', { id });
+
+      if (!this.isValidUUID(id)) {
+        throw new Error(`Invalid chef id (expected UUID): ${id}`);
+      }
 
       const { error } = await supabase
         .from('chefs')
@@ -169,9 +223,11 @@ export class SupabaseDataService {
     try {
       logger.info('SUPABASE', '➕ Creating product...');
 
+      const payload = this.sanitizeProductPayload(product);
+
       const { data, error } = await supabase
         .from('products')
-        .insert([product])
+        .insert([payload])
         .select()
         .single();
 
@@ -189,12 +245,19 @@ export class SupabaseDataService {
     try {
       logger.info('SUPABASE', '📝 Updating product...', { id });
 
+      if (!this.isValidUUID(id)) {
+        throw new Error(`Invalid product id (expected UUID): ${id}`);
+      }
+
+      const payload = this.sanitizeProductPayload(updates);
+
+      // Use maybeSingle to avoid throwing when 0 rows are returned
       const { data, error } = await supabase
         .from('products')
-        .update(updates)
+        .update(payload)
         .eq('id', id)
         .select()
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
 
@@ -209,6 +272,10 @@ export class SupabaseDataService {
   async deleteProduct(id: string): Promise<boolean> {
     try {
       logger.info('SUPABASE', '🗑️ Deleting product...', { id });
+
+      if (!this.isValidUUID(id)) {
+        throw new Error(`Invalid product id (expected UUID): ${id}`);
+      }
 
       const { error } = await supabase
         .from('products')

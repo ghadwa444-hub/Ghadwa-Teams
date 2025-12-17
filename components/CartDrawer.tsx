@@ -6,7 +6,7 @@ interface CartDrawerProps {
     isOpen: boolean;
     onClose: () => void;
     cart: CartItem[];
-    updateQuantity: (id: number, qty: number, item?: MenuItem) => void;
+    updateQuantity: (id: string | number, qty: number, item?: MenuItem) => void;
     onCheckout: () => void;
     onClearCart: () => void; // Added Prop
 }
@@ -51,7 +51,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose, cart, u
                     ) : (
                         cart.map(item => (
                             <div key={item.id} className="flex gap-4 bg-white p-3 rounded-xl border border-gray-100 shadow-sm relative group">
-                                <img src={item.img} alt={item.name} className="w-20 h-20 rounded-lg object-cover flex-shrink-0 bg-gray-100" />
+                                <img src={item.image_url || 'https://via.placeholder.com/100x100?text=Product'} alt={item.name} className="w-20 h-20 rounded-lg object-cover flex-shrink-0 bg-gray-100" />
                                 <div className="flex-grow">
                                     <div className="flex justify-between items-start mb-1">
                                         <h3 className="font-bold text-gray-900 text-sm line-clamp-2">{item.name}</h3>
