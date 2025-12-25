@@ -16,6 +16,27 @@ export const TrackOrderPage: React.FC<TrackOrderPageProps> = ({ orders, initialO
     const [foundOrder, setFoundOrder] = useState<Order | null>(null);
     const [foundOrders, setFoundOrders] = useState<Order[]>([]); // For phone search - multiple orders
     const [searched, setSearched] = useState(false);
+    
+    // Get current user ID from localStorage or session
+    const getCurrentUserId = (): string | null => {
+        try {
+            const userStr = localStorage.getItem('ghadwa_user');
+            if (userStr) {
+                const user = JSON.parse(userStr);
+                return user.id || null;
+            }
+        } catch (e) {
+            console.error('Error getting current user:', e);
+        }
+        return null;
+    };
+    
+    const currentUserId = getCurrentUserId();
+    
+    // Filter orders to show only current user's orders (security fix)
+    const userOrders = currentUserId 
+        ? orders.filter(o => o.customer_id === currentUserId)
+        : [];
 
     useEffect(() => {
         if (initialOrderId) {
@@ -28,7 +49,8 @@ export const TrackOrderPage: React.FC<TrackOrderPageProps> = ({ orders, initialO
         if (!id) return;
         setSearched(true);
         setFoundOrders([]);
-        const order = orders.find(o => String(o.id) === id.trim() || o.order_number === id.trim());
+        // Only search in user's orders (security fix)
+        const order = userOrders.find(o => String(o.id) === id.trim() || o.order_number === id.trim());
         setFoundOrder(order || null);
     };
 
@@ -39,8 +61,8 @@ export const TrackOrderPage: React.FC<TrackOrderPageProps> = ({ orders, initialO
         // Normalize phone number (remove spaces, dashes, etc.)
         const normalizedPhone = phone.trim().replace(/[\s\-\(\)]/g, '');
         
-        // Search in both delivery_phone and customer_phone
-        const matchingOrders = orders.filter(o => {
+        // Search only in user's orders (security fix)
+        const matchingOrders = userOrders.filter(o => {
             const deliveryPhone = o.delivery_phone?.replace(/[\s\-\(\)]/g, '') || '';
             const customerPhone = o.customer_phone?.replace(/[\s\-\(\)]/g, '') || '';
             const legacyPhone = o.phone?.replace(/[\s\-\(\)]/g, '') || '';
@@ -238,14 +260,14 @@ export const TrackOrderPage: React.FC<TrackOrderPageProps> = ({ orders, initialO
                                 طلباتك السابقة
                             </h3>
                             
-                            {orders.length === 0 ? (
+                            {userOrders.length === 0 ? (
                                 <div className="text-center py-12 text-gray-400">
                                     <i className="fa-solid fa-clipboard-list text-4xl mb-3 opacity-20"></i>
                                     <p>لسه معملتش أي طلبات، اطلب دلوقتي واستمتع بأحلى أكل بيتي!</p>
                                 </div>
                             ) : (
                                 <div className="space-y-4">
-                                    {orders.map(order => (
+                                    {userOrders.map(order => (
                                         <div key={order.id} className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition cursor-pointer group">
                                             <div className="flex justify-between items-center mb-3" onClick={() => setFoundOrder(order)}>
                                                 <div className="flex items-center gap-4">

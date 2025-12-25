@@ -14,11 +14,36 @@ const CountdownTimer = ({ targetDate }: { targetDate?: string }) => {
     const [timeLeft, setTimeLeft] = useState<{h: number, m: number, s: number} | null>(null);
 
     useEffect(() => {
-        if (!targetDate) return;
+        if (!targetDate) {
+            // If no target date, calculate 7 days from creation date
+            // For now, show a default countdown (7 days from now)
+            const defaultEndDate = new Date();
+            defaultEndDate.setDate(defaultEndDate.getDate() + 7);
+            const interval = setInterval(() => {
+                const now = new Date().getTime();
+                const distance = defaultEndDate.getTime() - now;
+                
+                if (distance < 0) {
+                    clearInterval(interval);
+                    setTimeLeft(null);
+                } else {
+                    setTimeLeft({
+                        h: Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
+                        m: Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60)),
+                        s: Math.floor((distance % (1000 * 60)) / 1000)
+                    });
+                }
+            }, 1000);
+            return () => clearInterval(interval);
+        }
 
         const interval = setInterval(() => {
             const now = new Date().getTime();
-            const distance = new Date(targetDate).getTime() - now;
+            // If targetDate is creation date, add 7 days to it
+            const creationDate = new Date(targetDate);
+            const expiryDate = new Date(creationDate);
+            expiryDate.setDate(expiryDate.getDate() + 7); // Add 7 days for weekly offers
+            const distance = expiryDate.getTime() - now;
 
             if (distance < 0) {
                 clearInterval(interval);
@@ -35,11 +60,11 @@ const CountdownTimer = ({ targetDate }: { targetDate?: string }) => {
         return () => clearInterval(interval);
     }, [targetDate]);
 
-    if (!timeLeft) return (
-        <div className="w-full bg-gray-100 text-gray-400 py-2 rounded-xl text-center font-bold text-sm mb-4">
-            انتهى العرض
-        </div>
-    );
+    // Always show countdown (don't show "انتهى العرض" unless really expired)
+    if (!timeLeft) {
+        // If expired, don't show anything (or show a different message)
+        return null;
+    }
 
     return (
         <div className="flex items-center justify-center gap-3 bg-red-50 border-2 border-red-100 text-[#8B2525] px-4 py-3 rounded-2xl mb-4 w-full">

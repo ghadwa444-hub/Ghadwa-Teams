@@ -8,10 +8,18 @@ interface FullMenuProps {
     menuItems: MenuItem[];
     cart: CartItem[];
     updateQuantity: (id: number, qty: number, item?: MenuItem) => void;
+    chefs?: any[]; // Add chefs prop to lookup chef names
 }
 
-export const FullMenu: React.FC<FullMenuProps> = ({ menuItems, cart, updateQuantity }) => {
+export const FullMenu: React.FC<FullMenuProps> = ({ menuItems, cart, updateQuantity, chefs = [] }) => {
     const [activeCategory, setActiveCategory] = useState("الكل");
+    
+    // Helper to get chef name from chef_id
+    const getChefName = (chefId?: string): string => {
+        if (!chefId || !chefs.length) return 'مطبخ';
+        const chef = chefs.find(c => c.id === chefId);
+        return chef?.chef_name || 'مطبخ';
+    };
 
     const filteredItems = activeCategory === "الكل" 
         ? menuItems 
@@ -71,7 +79,7 @@ export const FullMenu: React.FC<FullMenuProps> = ({ menuItems, cart, updateQuant
                                         <i className="fa-solid fa-clock"></i>
                                         {item.prep_time ? `${item.prep_time} د` : "45 د"}
                                         <span className="mx-1">•</span>
-                                        <span className="text-gray-400">{item.category || "أصناف"}</span>
+                                        <span className="text-gray-400">{item.chef || getChefName(item.chef_id) || "مطبخ"}</span>
                                     </p>
                                     <AddToCartButton item={item} cart={cart} updateQuantity={updateQuantity} className="w-full py-2.5" disabled={!item.is_available} />
                                 </div>

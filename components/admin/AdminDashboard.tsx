@@ -33,6 +33,103 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ orders, chefs, m
     const deliveryPct = Math.round((deliveryCount / totalOrders) * 100);
     const completedPct = Math.round((completedOrders / totalOrders) * 100);
 
+    // Calculate weekly sales (current week: Saturday to Friday)
+    const getWeeklySales = () => {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0); // Reset to start of day
+        
+        // Find the start of the current week (Saturday)
+        // JavaScript getDay(): 0=Sunday, 1=Monday, ..., 6=Saturday
+        const currentDay = today.getDay(); // 0-6
+        // Calculate days to subtract to get to Saturday (start of week)
+        // If today is Sunday (0), subtract 1 to get Saturday
+        // If today is Monday (1), subtract 2 to get Saturday
+        // If today is Saturday (6), subtract 0 (already Saturday)
+        const daysToSaturday = currentDay === 0 ? 1 : (currentDay === 6 ? 0 : currentDay + 1);
+        const weekStart = new Date(today);
+        weekStart.setDate(today.getDate() - daysToSaturday);
+        weekStart.setHours(0, 0, 0, 0);
+        
+        // Week end is 6 days after week start (Friday)
+        const weekEnd = new Date(weekStart);
+        weekEnd.setDate(weekStart.getDate() + 6);
+        weekEnd.setHours(23, 59, 59, 999);
+        
+        const weekDays = ['السبت', 'الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة'];
+        const salesByDay: number[] = [0, 0, 0, 0, 0, 0, 0];
+        
+        // Get orders from current week (Saturday to Friday)
+        const currentWeekOrders = orders.filter(order => {
+            if (!order.created_at) return false;
+            try {
+                const orderDate = new Date(order.created_at);
+                if (isNaN(orderDate.getTime())) return false; // Invalid date
+                return orderDate >= weekStart && orderDate <= weekEnd;
+            } catch (e) {
+                return false;
+            }
+        });
+        
+        console.log('📊 Weekly Sales Debug:', {
+            totalOrders: orders.length,
+            ordersWithDate: orders.filter(o => o.created_at).length,
+            currentWeekOrdersCount: currentWeekOrders.length,
+            weekStart: weekStart.toISOString(),
+            weekEnd: weekEnd.toISOString(),
+            today: today.toISOString(),
+            sampleOrders: currentWeekOrders.slice(0, 5).map(o => ({
+                id: o.id,
+                created_at: o.created_at,
+                total_amount: o.total_amount,
+                date: new Date(o.created_at).toLocaleDateString('ar-EG'),
+                dayOfWeek: new Date(o.created_at).getDay()
+            }))
+        });
+        
+        // Group by day of week
+        // JavaScript getDay(): 0=Sunday, 1=Monday, ..., 6=Saturday
+        // We want: 0=Saturday, 1=Sunday, ..., 6=Friday
+        currentWeekOrders.forEach(order => {
+            if (!order.created_at) return;
+            try {
+                const orderDate = new Date(order.created_at);
+                if (isNaN(orderDate.getTime())) return; // Invalid date
+                const jsDay = orderDate.getDay(); // 0=Sunday, 6=Saturday
+                // Convert: Sunday(0) -> 1, Monday(1) -> 2, ..., Saturday(6) -> 0
+                const dayOfWeek = (jsDay + 1) % 7;
+                const revenue = Number(order.total_amount) || Number(order.total) || 0;
+                if (revenue > 0) {
+                    salesByDay[dayOfWeek] += revenue;
+                    console.log(`📊 Order ${order.id}: jsDay=${jsDay}, dayOfWeek=${dayOfWeek}, revenue=${revenue}, dayName=${weekDays[dayOfWeek]}`);
+                }
+            } catch (e) {
+                console.error('Error processing order:', e, order);
+            }
+        });
+        
+        console.log('📊 Sales by Day Array:', salesByDay);
+        console.log('📊 Sales by Day with Names:', salesByDay.map((val, idx) => `${weekDays[idx]}: ${val} ج.م`));
+        console.log('📊 Max Revenue:', Math.max(...salesByDay, 1));
+        
+        // Calculate max for percentage calculation
+        const maxRevenue = Math.max(...salesByDay, 1); // Avoid division by zero
+        
+        return { salesByDay, maxRevenue, weekDays };
+    };
+    
+    const { salesByDay, maxRevenue, weekDays } = getWeeklySales();
+    
+    // Calculate percentage change (compare this week to last week)
+    const thisWeekTotal = salesByDay.reduce((sum, val) => sum + val, 0);
+    const lastWeekOrders = orders.filter(order => {
+        if (!order.created_at) return false;
+        const orderDate = new Date(order.created_at);
+        const daysDiff = Math.floor((new Date().getTime() - orderDate.getTime()) / (1000 * 60 * 60 * 24));
+        return daysDiff >= 7 && daysDiff < 14;
+    });
+    const lastWeekTotal = lastWeekOrders.reduce((sum, order) => sum + (Number(order.total_amount) || Number(order.total) || 0), 0);
+    const percentageChange = lastWeekTotal > 0 ? Math.round(((thisWeekTotal - lastWeekTotal) / lastWeekTotal) * 100) : 0;
+
     // Simulate Top Chef (Just taking the first one or finding max orders if logic existed)
     const topChef = chefs.length > 0 ? chefs[0] : { name: 'N/A', img: '', orders: '0', rating: 0 };
 
@@ -129,29 +226,44 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ orders, chefs, m
                             <h3 className="text-xl font-bold text-gray-900">تحليل المبيعات الأسبوعي</h3>
                             <p className="text-xs text-gray-400">مقارنة بالأسبوع الماضي</p>
                         </div>
-                        <span className="text-green-500 bg-green-50 px-2 py-1 rounded-lg text-xs font-bold flex items-center gap-1">
-                            <i className="fa-solid fa-arrow-trend-up"></i> +12%
+                        <span className={`${percentageChange >= 0 ? 'text-green-500 bg-green-50' : 'text-red-500 bg-red-50'} px-2 py-1 rounded-lg text-xs font-bold flex items-center gap-1`}>
+                            <i className={`fa-solid fa-arrow-trend-${percentageChange >= 0 ? 'up' : 'down'}`}></i> {percentageChange >= 0 ? '+' : ''}{percentageChange}%
                         </span>
                     </div>
-                    {/* Simulated Bar Chart */}
+                    {/* Real Bar Chart from Orders */}
                     <div className="flex items-end justify-between h-56 gap-4 px-2">
-                        {[40, 65, 30, 85, 50, 70, 90].map((h, i) => (
-                            <div key={i} className="flex flex-col items-center gap-3 w-full group cursor-pointer">
-                                <div className="w-full bg-gray-100 rounded-t-xl relative h-full flex items-end overflow-hidden">
-                                     <div 
-                                        className="w-full bg-[#8B2525] opacity-80 group-hover:opacity-100 transition-all rounded-t-xl duration-500 relative" 
-                                        style={{ height: `${h}%` }}
-                                     >
-                                        <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity mb-2">
-                                            {h * 10} ج.م
-                                        </div>
-                                     </div>
+                        {salesByDay.map((revenue, i) => {
+                            // Calculate height percentage (minimum 5% if there's revenue, otherwise 0)
+                            const height = revenue > 0 
+                                ? Math.max((revenue / maxRevenue) * 100, 5) 
+                                : 0;
+                            
+                            console.log(`📊 Chart Bar ${i} (${weekDays[i]}): revenue=${revenue}, height=${height}%, maxRevenue=${maxRevenue}`);
+                            
+                            return (
+                                <div key={i} className="flex flex-col items-center gap-3 w-full group cursor-pointer">
+                                    <div className="w-full bg-gray-100 rounded-t-xl relative h-full flex items-end overflow-hidden min-h-[40px]">
+                                         {revenue > 0 ? (
+                                             <div 
+                                                className="w-full bg-[#8B2525] opacity-80 group-hover:opacity-100 transition-all rounded-t-xl duration-500 relative" 
+                                                style={{ height: `${height}%`, minHeight: '20px' }}
+                                             >
+                                                <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity mb-2 whitespace-nowrap z-10">
+                                                    {revenue.toLocaleString()} ج.م
+                                                </div>
+                                             </div>
+                                         ) : (
+                                             <div className="absolute -top-8 left-1/2 -translate-x-1/2 text-gray-400 text-[10px] opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                                                 0 ج.م
+                                             </div>
+                                         )}
+                                    </div>
+                                    <span className="text-xs text-gray-400 font-bold group-hover:text-[#8B2525] transition-colors">
+                                        {weekDays[i]}
+                                    </span>
                                 </div>
-                                <span className="text-xs text-gray-400 font-bold group-hover:text-[#8B2525] transition-colors">
-                                    {['السبت', 'الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة'][i]}
-                                </span>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 </div>
 
@@ -223,26 +335,58 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ orders, chefs, m
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100 text-gray-800">
-                            {orders.slice(0, 5).map(order => (
-                                <tr key={order.id} className="text-sm hover:bg-gray-50 transition-colors">
-                                    <td className="p-4 font-bold text-gray-900">#{order.id}</td>
-                                    <td className="p-4 font-bold text-gray-700">{order.customer}</td>
-                                    <td className="p-4 text-gray-600 max-w-xs truncate">{order.items}</td>
-                                    <td className="p-4 font-bold text-[#8B2525]">{order.total} ج.م</td>
-                                    <td className="p-4">
-                                        <span className={`px-2 py-1 rounded-full text-xs font-bold ${
-                                            order.status === 'delivered' ? 'bg-green-100 text-green-700' :
-                                            order.status === 'out_for_delivery' ? 'bg-blue-100 text-blue-700' :
-                                            order.status === 'cooking' ? 'bg-orange-100 text-orange-700' :
-                                            'bg-yellow-100 text-yellow-700'
-                                        }`}>
-                                            {order.status === 'delivered' ? 'تم التوصيل' : 
-                                             order.status === 'out_for_delivery' ? 'مع الطيار' :
-                                             order.status === 'cooking' ? 'جاري التحضير' : 'قيد الانتظار'}
-                                        </span>
-                                    </td>
-                                </tr>
-                            ))}
+                            {orders.slice(0, 5).map(order => {
+                                // Format order number
+                                const orderNumber = order.order_number 
+                                    ? `#${order.order_number.split('-').pop() || order.order_number}` 
+                                    : `#${String(order.id).slice(0, 8)}`;
+                                
+                                // Get customer name
+                                const customerName = order.customer_name || order.customer || 'غير محدد';
+                                
+                                // Get order items as string
+                                let itemsText = '';
+                                if (order.itemsDetails && order.itemsDetails.length > 0) {
+                                    itemsText = order.itemsDetails.map((item: any) => 
+                                        `${item.name || item.product_name || 'منتج'} x${item.quantity || 1}`
+                                    ).join(', ');
+                                } else if (order.items) {
+                                    itemsText = typeof order.items === 'string' ? order.items : JSON.stringify(order.items);
+                                } else if (order.items && Array.isArray(order.items)) {
+                                    itemsText = order.items.map((item: any) => 
+                                        `${item.name || item.product_name || 'منتج'} x${item.quantity || 1}`
+                                    ).join(', ');
+                                } else {
+                                    itemsText = 'لا توجد تفاصيل';
+                                }
+                                
+                                // Get total
+                                const total = order.total_amount || order.total || 0;
+                                
+                                return (
+                                    <tr key={order.id} className="text-sm hover:bg-gray-50 transition-colors">
+                                        <td className="p-4 font-bold text-gray-900">{orderNumber}</td>
+                                        <td className="p-4 font-bold text-gray-700">{customerName}</td>
+                                        <td className="p-4 text-gray-600 max-w-xs truncate" title={itemsText}>{itemsText}</td>
+                                        <td className="p-4 font-bold text-[#8B2525]">{total} ج.م</td>
+                                        <td className="p-4">
+                                            <span className={`px-2 py-1 rounded-full text-xs font-bold ${
+                                                order.status === 'delivered' ? 'bg-green-100 text-green-700' :
+                                                order.status === 'out_for_delivery' ? 'bg-blue-100 text-blue-700' :
+                                                order.status === 'preparing' ? 'bg-orange-100 text-orange-700' :
+                                                order.status === 'confirmed' ? 'bg-purple-100 text-purple-700' :
+                                                'bg-yellow-100 text-yellow-700'
+                                            }`}>
+                                                {order.status === 'delivered' ? 'تم التوصيل' : 
+                                                 order.status === 'out_for_delivery' ? 'مع الطيار' :
+                                                 order.status === 'preparing' ? 'جاري التحضير' :
+                                                 order.status === 'confirmed' ? 'مؤكد' :
+                                                 'قيد الانتظار'}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
                         </tbody>
                     </table>
                 </div>

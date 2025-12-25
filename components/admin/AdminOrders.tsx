@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Order } from '../../types';
 import { validateOrderStatus } from '../../utils/validations';
-import { supabase } from '../../services/supabase';
+import { api } from '../../services/api';
 
 interface AdminOrdersProps {
     orders: Order[];
@@ -118,12 +118,12 @@ export const AdminOrders: React.FC<AdminOrdersProps> = ({ orders, updateOrderSta
 
         try {
             setIsLoading(true);
-            const { error } = await supabase
-                .from('orders')
-                .update({ status: newStatus })
-                .eq('id', orderId);
-
-            if (error) throw error;
+            const success = await api.updateOrderStatus(orderId, newStatus);
+            
+            if (!success) {
+                throw new Error('Failed to update order status');
+            }
+            
             showNotification('success', 'تم تحديث حالة الطلب! ✅');
         } catch (error) {
             console.error('Error updating order:', error);
@@ -136,12 +136,12 @@ export const AdminOrders: React.FC<AdminOrdersProps> = ({ orders, updateOrderSta
     const handleDelete = async (id: string) => {
         try {
             setIsLoading(true);
-            const { error } = await supabase
-                .from('orders')
-                .delete()
-                .eq('id', id);
-
-            if (error) throw error;
+            const success = await api.deleteOrder(id);
+            
+            if (!success) {
+                throw new Error('Failed to delete order');
+            }
+            
             onDeleteOrder(id);
             setDeleteConfirm(null);
             showNotification('success', 'تم حذف الطلب بنجاح! 🗑️');

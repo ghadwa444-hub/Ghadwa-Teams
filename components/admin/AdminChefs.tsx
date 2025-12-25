@@ -9,7 +9,7 @@ import { logger } from '../../utils/logger';
 interface AdminChefsProps {
     chefs: Chef[];
     orders: Order[];
-    toggleChefStatus: (id: string) => void;
+    toggleChefStatus: (id: string) => Promise<void>;
     onAdd: (chef: Chef) => void;
     onEdit: (chef: Chef) => void;
     onDelete: (id: string) => void;
@@ -25,6 +25,7 @@ export const AdminChefs: React.FC<AdminChefsProps> = ({ chefs, orders, toggleChe
     const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
     const [profileImagePreview, setProfileImagePreview] = useState<string>('');
     const profileImageRef = useRef<HTMLInputElement>(null);
+    const [togglingChefId, setTogglingChefId] = useState<string | null>(null);
 
     const showNotification = (type: 'success' | 'error', message: string) => {
         setNotification({ type, message });
@@ -355,10 +356,37 @@ export const AdminChefs: React.FC<AdminChefsProps> = ({ chefs, orders, toggleChe
                                 </div>
 
                                 <button 
-                                    onClick={() => toggleChefStatus(chef.id)}
-                                    className={`w-full py-2.5 rounded-xl font-bold text-sm text-white transition-all shadow-md ${chef.is_active ? 'bg-red-500 hover:bg-red-600 shadow-red-200' : 'bg-green-500 hover:bg-green-600 shadow-green-200'}`}
+                                    onClick={async () => {
+                                        setTogglingChefId(chef.id);
+                                        const oldStatus = chef.is_active;
+                                        const newStatus = !oldStatus;
+                                        try {
+                                            await toggleChefStatus(chef.id);
+                                            // Use the NEW status (inverted) for the notification
+                                            showNotification('success', `تم ${newStatus ? 'فتح' : 'إغلاق'} المطبخ بنجاح! ✅`);
+                                        } catch (error) {
+                                            showNotification('error', `فشل ${newStatus ? 'فتح' : 'إغلاق'} المطبخ. يرجى المحاولة مرة أخرى.`);
+                                        } finally {
+                                            setTogglingChefId(null);
+                                        }
+                                    }}
+                                    disabled={togglingChefId === chef.id}
+                                    className={`w-full py-2.5 rounded-xl font-bold text-sm text-white transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed ${
+                                        chef.is_active 
+                                            ? 'bg-red-500 hover:bg-red-600 shadow-red-200' 
+                                            : 'bg-green-500 hover:bg-green-600 shadow-green-200'
+                                    }`}
                                 >
-                                     {chef.is_active ? 'إغلاق المطبخ 🔒' : 'فتح المطبخ 🔓'}
+                                    {togglingChefId === chef.id ? (
+                                        <span className="flex items-center justify-center gap-2">
+                                            <i className="fa-solid fa-spinner animate-spin"></i>
+                                            جاري التحديث...
+                                        </span>
+                                    ) : (
+                                        <>
+                                            {chef.is_active ? 'إغلاق المطبخ 🔒' : 'فتح المطبخ 🔓'}
+                                        </>
+                                    )}
                                 </button>
                             </div>
                         </div>

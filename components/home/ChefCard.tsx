@@ -4,22 +4,39 @@ import { Chef } from '../../types';
 interface ChefCardProps {
   chef: Chef;
   onClick: () => void;
+  ordersCount?: number; // Number of orders for this chef
 }
 
-export const ChefCard: React.FC<ChefCardProps> = ({ chef, onClick }) => {
+export const ChefCard: React.FC<ChefCardProps> = ({ chef, onClick, ordersCount = 0 }) => {
+  const handleClick = () => {
+    if (chef.is_active) {
+      onClick();
+    }
+  };
+
   return (
     <div
-      onClick={onClick}
-      className="group relative bg-white rounded-2xl sm:rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden cursor-pointer border border-gray-100 transform hover:-translate-y-1"
+      onClick={handleClick}
+      className={`group relative bg-white rounded-2xl sm:rounded-3xl shadow-lg transition-all duration-300 overflow-hidden border border-gray-100 ${
+        chef.is_active 
+          ? 'cursor-pointer hover:shadow-2xl transform hover:-translate-y-1' 
+          : 'cursor-not-allowed opacity-75'
+      }`}
     >
       {/* Cover Image - Responsive Heights */}
       <div className="h-40 sm:h-44 md:h-48 lg:h-56 xl:h-64 overflow-hidden relative">
         <img
           src={chef.image_url || 'https://via.placeholder.com/400x300?text=Chef'}
           alt={chef.chef_name}
-          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+          className={`w-full h-full object-cover transition-transform duration-700 ${
+            chef.is_active ? 'group-hover:scale-110' : 'grayscale opacity-60'
+          }`}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+        {/* Overlay when closed */}
+        {!chef.is_active && (
+          <div className="absolute inset-0 bg-gray-900/40"></div>
+        )}
 
         {/* Status Badge */}
         <div
@@ -77,20 +94,37 @@ export const ChefCard: React.FC<ChefCardProps> = ({ chef, onClick }) => {
             <span className="hidden sm:inline">{chef.rating.toFixed(1)}</span>
             <span className="sm:hidden text-xs">{chef.rating.toFixed(1)}</span>
           </div>
-          <div className="text-xs sm:text-sm text-gray-400 font-medium flex items-center gap-1">
-            <i className="fa-solid fa-bag-shopping text-xs sm:text-sm"></i>
-            <span className="hidden sm:inline">{chef.id}</span>
+          <div className="text-xs sm:text-sm text-gray-600 font-bold flex items-center gap-1">
+            <i className="fa-solid fa-receipt text-xs sm:text-sm text-[#8B2525]"></i>
+            <span className="hidden sm:inline">{ordersCount} طلب</span>
+            <span className="sm:hidden">{ordersCount}</span>
           </div>
         </div>
 
-        {/* Hover Action Button */}
-        <div className="absolute inset-x-0 bottom-0 p-4 sm:p-5 md:p-6 opacity-0 translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 bg-white/95 backdrop-blur-sm border-t border-gray-100 flex justify-center">
-          <button className="w-full bg-[#8B2525] text-white font-bold py-2 sm:py-2.5 px-3 sm:px-4 rounded-lg sm:rounded-xl hover:bg-[#6b1c1c] transition shadow-lg flex items-center justify-center gap-2 text-sm sm:text-base">
-            <span>عرض المنيو</span>
-            <i className="fa-solid fa-arrow-left text-xs sm:text-sm"></i>
-          </button>
-        </div>
+        {/* Kitchen Closed Button - Always visible when closed */}
+        {!chef.is_active && (
+          <div className="absolute inset-x-0 bottom-0 p-4 sm:p-5 md:p-6 bg-white/95 backdrop-blur-sm border-t border-gray-100">
+            <button
+              disabled
+              className="w-full bg-gray-100 text-gray-400 rounded-lg sm:rounded-xl font-bold py-2 sm:py-2.5 px-3 sm:px-4 cursor-not-allowed flex items-center justify-center gap-2 text-sm sm:text-base border border-gray-200"
+            >
+              <i className="fa-solid fa-lock text-xs sm:text-sm"></i>
+              <span>المطبخ مغلق</span>
+            </button>
+          </div>
+        )}
+
+        {/* Hover Action Button - Only shown when open */}
+        {chef.is_active && (
+          <div className="absolute inset-x-0 bottom-0 p-4 sm:p-5 md:p-6 opacity-0 translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 bg-white/95 backdrop-blur-sm border-t border-gray-100 flex justify-center">
+            <button className="w-full bg-[#8B2525] text-white font-bold py-2 sm:py-2.5 px-3 sm:px-4 rounded-lg sm:rounded-xl hover:bg-[#6b1c1c] transition shadow-lg flex items-center justify-center gap-2 text-sm sm:text-base">
+              <span>عرض المنيو</span>
+              <i className="fa-solid fa-arrow-left text-xs sm:text-sm"></i>
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
 };
+

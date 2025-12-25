@@ -79,7 +79,7 @@ export interface Order {
   customer_id?: string; // UUID
   chef_id?: string;     // UUID
   order_number?: string; // GHD-xxx format
-  status: 'pending' | 'confirmed' | 'preparing' | 'ready' | 'delivering' | 'delivered' | 'cancelled';
+  status: 'pending' | 'confirmed' | 'preparing' | 'out_for_delivery' | 'delivered' | 'cancelled';
   subtotal: number;     // Required in DB
   delivery_fee?: number;
   tax_amount?: number;

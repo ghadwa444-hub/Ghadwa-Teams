@@ -1,15 +1,24 @@
 
 import React, { useState, useMemo } from 'react';
-import { Chef } from '../types';
+import { Chef, Order } from '../types';
 import { ChefCard } from '../components/home/ChefCard';
 
 interface AllChefsPageProps {
     chefs: Chef[];
     onBack: () => void;
     onChefClick: (chef: Chef) => void;
+    orders?: Order[]; // Optional orders to calculate order count
 }
 
-export const AllChefsPage: React.FC<AllChefsPageProps> = ({ chefs, onBack, onChefClick }) => {
+export const AllChefsPage: React.FC<AllChefsPageProps> = ({ chefs, onBack, onChefClick, orders = [] }) => {
+    // Helper function to get order count for a chef
+    const getChefOrdersCount = (chefId: string): number => {
+        if (!orders || orders.length === 0) return 0;
+        return orders.filter(order => {
+            if (!order.chef_id || !chefId) return false;
+            return String(order.chef_id).trim().toLowerCase() === String(chefId).trim().toLowerCase();
+        }).length;
+    };
     const [searchTerm, setSearchTerm] = useState('');
     const [filterOpen, setFilterOpen] = useState<boolean | null>(null);
 
@@ -115,6 +124,7 @@ export const AllChefsPage: React.FC<AllChefsPageProps> = ({ chefs, onBack, onChe
                                 key={chef.id}
                                 chef={chef}
                                 onClick={() => onChefClick(chef)}
+                                ordersCount={getChefOrdersCount(chef.id)}
                             />
                         ))}
                     </div>

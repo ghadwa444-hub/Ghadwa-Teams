@@ -401,12 +401,12 @@ export const OrderSuccessModal: React.FC<OrderSuccessModalProps> = ({ isOpen, on
         </p>
 
         <div className="flex flex-col gap-3">
-          <button
+          {/* <button
             onClick={onTrack}
             className="w-full bg-[#8B2525] text-white py-4 rounded-xl font-bold text-lg shadow-lg hover:bg-[#6b1c1c] transition-all active:scale-95"
           >
             تتبع الطلب 🛵
-          </button>
+          </button> */}
           <button
             onClick={onClose}
             className="w-full bg-gray-100 text-gray-700 py-3 rounded-xl font-bold hover:bg-gray-200 transition-all"

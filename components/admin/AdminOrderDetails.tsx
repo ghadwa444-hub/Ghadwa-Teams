@@ -5,7 +5,7 @@ import { Order } from '../../types';
 interface AdminOrderDetailsProps {
     order: Order | null;
     onBack: () => void;
-    updateOrderStatus: (id: number, status: string) => void;
+    updateOrderStatus: (id: string, status: string) => void;
 }
 
 export const AdminOrderDetails: React.FC<AdminOrderDetailsProps> = ({ order, onBack, updateOrderStatus }) => {
@@ -37,12 +37,15 @@ export const AdminOrderDetails: React.FC<AdminOrderDetailsProps> = ({ order, onB
                                 <span className={`inline-block px-4 py-1.5 rounded-full text-sm font-bold ${
                                     order.status === 'delivered' ? 'bg-green-100 text-green-700' :
                                     order.status === 'out_for_delivery' ? 'bg-blue-100 text-blue-700' :
-                                    order.status === 'cooking' ? 'bg-orange-100 text-orange-700' :
+                                    order.status === 'preparing' ? 'bg-orange-100 text-orange-700' :
+                                    order.status === 'confirmed' ? 'bg-purple-100 text-purple-700' :
                                     'bg-yellow-100 text-yellow-700'
                                 }`}>
                                     {order.status === 'delivered' ? 'تم التوصيل' : 
                                      order.status === 'out_for_delivery' ? 'مع الطيار' :
-                                     order.status === 'cooking' ? 'جاري التحضير' : 'قيد الانتظار'}
+                                     order.status === 'preparing' ? 'جاري التحضير' :
+                                     order.status === 'confirmed' ? 'مؤكد' :
+                                     'قيد الانتظار'}
                                 </span>
                             </div>
                         </div>
@@ -140,9 +143,9 @@ export const AdminOrderDetails: React.FC<AdminOrderDetailsProps> = ({ order, onB
                                 قيد الانتظار
                                 {order.status === 'pending' && <i className="fa-solid fa-check"></i>}
                             </button>
-                            <button onClick={() => updateOrderStatus(order.id, 'cooking')} className={`w-full py-2 px-4 rounded-lg font-bold text-sm transition text-right flex justify-between ${order.status === 'cooking' ? 'bg-orange-50 text-orange-700 border border-orange-200' : 'hover:bg-gray-50 text-gray-600'}`}>
+                            <button onClick={() => updateOrderStatus(order.id, 'preparing')} className={`w-full py-2 px-4 rounded-lg font-bold text-sm transition text-right flex justify-between ${order.status === 'preparing' ? 'bg-orange-50 text-orange-700 border border-orange-200' : 'hover:bg-gray-50 text-gray-600'}`}>
                                 جاري التحضير
-                                {order.status === 'cooking' && <i className="fa-solid fa-check"></i>}
+                                {order.status === 'preparing' && <i className="fa-solid fa-check"></i>}
                             </button>
                             <button onClick={() => updateOrderStatus(order.id, 'out_for_delivery')} className={`w-full py-2 px-4 rounded-lg font-bold text-sm transition text-right flex justify-between ${order.status === 'out_for_delivery' ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'hover:bg-gray-50 text-gray-600'}`}>
                                 تم الاستلام من الدليفري

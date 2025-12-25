@@ -2,7 +2,8 @@
 import React, { useState } from 'react';
 import { MenuItem, Chef } from '../../types';
 import { AdminFormModal } from '../Modals';
-import { supabase } from '../../services/supabase';
+import { api } from '../../services/api';
+import { logger } from '../../utils/logger';
 
 interface AdminBestSellersProps {
     bestSellers: MenuItem[];
@@ -48,54 +49,54 @@ export const AdminBestSellers: React.FC<AdminBestSellersProps> = ({ bestSellers,
         setIsLoading(true);
 
         try {
-            const itemData = {
+            const itemData: Partial<MenuItem> = {
                 name: formData.name,
-                title: formData.name, // Required field - sync with name
                 price: Number(formData.price),
-                category: formData.category,
+                category: formData.category || 'main',
                 chef_id: formData.chef_id || null,
                 description: formData.description || null,
                 image_url: formData.image_url || null,
                 is_available: true,
-                is_active: true, // Required field for database
-                is_featured: true,
+                is_featured: true, // Best sellers are featured items
                 is_offer: false,
-                preparation_time: 30 // Default prep time
+                prep_time: 30 // Default prep time
             };
 
             if (currentItem) {
-                const { data, error } = await supabase
-                    .from('products')
-                    .update(itemData)
-                    .eq('id', currentItem.id)
-                    .select()
-                    .single();
-
-                if (error) throw error;
-                if (data) {
-                    const updatedItem: MenuItem = { ...data };
-                    onEdit(updatedItem);
+                // Update existing item
+                const updatedItem: MenuItem = {
+                    ...currentItem,
+                    ...itemData
+                };
+                
+                const result = await api.updateMenuItem(updatedItem);
+                if (!result) {
+                    throw new Error('Failed to update best seller');
                 }
+                
+                // Use the returned product data from database
+                onEdit(result);
+                logger.info('ADMIN_BESTSELLERS', '✏️ Best seller updated successfully', { itemId: currentItem.id, itemName: itemData.name });
                 showNotification('success', 'تم تحديث الوجبة بنجاح! ✅');
+                setIsModalOpen(false);
+                setFormData({ name: '', price: '', category: '', chef_id: '', description: '', image_url: '' });
             } else {
-                const { data, error } = await supabase
-                    .from('products')
-                    .insert([itemData])
-                    .select()
-                    .single();
-
-                if (error) throw error;
-                if (data) {
-                    const newItem: MenuItem = { ...data };
-                    onAdd(newItem);
+                // Add new item
+                const createdItem = await api.addMenuItem(itemData);
+                
+                if (!createdItem) {
+                    throw new Error('Failed to add best seller - no data returned from server');
                 }
+                
+                logger.info('ADMIN_BESTSELLERS', '➕ Best seller added successfully', { itemId: createdItem.id, itemName: itemData.name });
+                onAdd(createdItem);
                 showNotification('success', 'تم إضافة الوجبة بنجاح! ✅');
+                setIsModalOpen(false);
+                setFormData({ name: '', price: '', category: '', chef_id: '', description: '', image_url: '' });
             }
-
-            setIsModalOpen(false);
-            setFormData({ name: '', price: '', category: '', chef_id: '', description: '', image_url: '' });
         } catch (error) {
             console.error('Error saving best seller:', error);
+            logger.error('ADMIN_BESTSELLERS', '❌ Error saving best seller', error);
             showNotification('error', `خطأ: ${error instanceof Error ? error.message : 'فشل حفظ الوجبة'}`);
         } finally {
             setIsLoading(false);

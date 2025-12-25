@@ -268,25 +268,30 @@ export const api = {
             return false;
         }
     },
-    updateOrderStatus: async (id: number, status: string): Promise<boolean> => {
+    updateOrderStatus: async (id: string | number, status: string): Promise<boolean> => {
         logger.info('API_ORDERS', `📊 Updating order status in Supabase`, { orderId: id, newStatus: status });
         try {
-            const orders = await supabaseDataService.getOrders();
-            
-            // Find order by matching the order_number pattern with the local ID
-            // Order numbers are like: GHD-1234567890-123
-            // We need to find an order that might match this local ID
-            const order = orders[0]; // For now, get the first order as a workaround
-            
-            if (!order) {
-                logger.warn('API_ORDERS', '⚠️ No orders found in database', { orderId: id });
+            // Validate status against allowed values
+            const allowedStatuses = ['pending', 'confirmed', 'preparing', 'out_for_delivery', 'delivered', 'cancelled'];
+            if (!allowedStatuses.includes(status)) {
+                logger.error('API_ORDERS', `❌ Invalid status: ${status}. Must be one of: ${allowedStatuses.join(', ')}`);
                 return false;
             }
             
-            await supabaseDataService.updateOrderStatus(order.id, status);
+            // Convert id to string (UUID)
+            const orderId = String(id);
+            
+            // Update order status directly using the UUID
+            const updatedOrder = await supabaseDataService.updateOrderStatus(orderId, status as any);
+            
+            if (!updatedOrder) {
+                logger.warn('API_ORDERS', '⚠️ Order status update returned null', { orderId: id });
+                return false;
+            }
+            
             logger.info('API_ORDERS', '✅ Order status updated in Supabase', { 
-                orderId: order.id, 
-                orderNumber: order.order_number,
+                orderId: updatedOrder.id, 
+                orderNumber: updatedOrder.order_number,
                 status 
             });
             return true;
@@ -295,12 +300,14 @@ export const api = {
             return false;
         }
     },
-    deleteOrder: async (id: number): Promise<boolean> => {
+    deleteOrder: async (id: string | number): Promise<boolean> => {
         logger.warn('API_ORDERS', '🗑️ Deleting order from Supabase', { orderId: id });
         try {
+            // Convert id to string
+            const orderId = String(id);
             // Note: deleteOrder not implemented in supabaseDataService yet
             // For now, we'll update status to 'cancelled'
-            return await api.updateOrderStatus(id, 'cancelled');
+            return await api.updateOrderStatus(orderId, 'cancelled');
         } catch (error) {
             logger.error('API_ORDERS', '❌ Error deleting order', error);
             return false;
@@ -326,10 +333,10 @@ export const api = {
             return false;
         }
     },
-    updateChef: async (chef: Chef): Promise<boolean> => {
-        logger.info('API_CHEFS', '✏️ Updating chef in Supabase', { chefId: chef.id, chefName: chef.chef_name });
+    updateChef: async (chef: Chef): Promise<Chef | null> => {
+        logger.info('API_CHEFS', '✏️ Updating chef in Supabase', { chefId: chef.id, chefName: chef.chef_name, is_active: chef.is_active });
         try {
-            await supabaseDataService.updateChef(chef.id, {
+            const result = await supabaseDataService.updateChef(chef.id, {
                 chef_name: chef.chef_name,
                 specialty: chef.specialty || null,
                 description: chef.description || null,
@@ -337,11 +344,17 @@ export const api = {
                 rating: chef.rating,
                 is_active: chef.is_active
             });
-            logger.info('API_CHEFS', '✅ Chef updated successfully in Supabase', { chefName: chef.chef_name });
-            return true;
+            
+            if (!result) {
+                logger.error('API_CHEFS', '❌ Chef update returned null', { chefId: chef.id });
+                return null;
+            }
+            
+            logger.info('API_CHEFS', '✅ Chef updated successfully in Supabase', { chefName: chef.chef_name, is_active: result.is_active });
+            return result;
         } catch (error) {
             logger.error('API_CHEFS', '❌ Error updating chef in Supabase', error);
-            return false;
+            throw error; // Re-throw so caller can handle it
         }
     },
     deleteChef: async (id: string): Promise<boolean> => {
@@ -387,10 +400,10 @@ export const api = {
             return null;
         }
     },
-    updateMenuItem: async (item: Product): Promise<boolean> => {
+    updateMenuItem: async (item: Product): Promise<Product | null> => {
         logger.info('API_MENU', '✏️ Updating menu item in Supabase', { name: item.name });
         try {
-            await supabaseDataService.updateProduct(item.id, {
+            const updatedProduct = await supabaseDataService.updateProduct(item.id, {
                 chef_id: item.chef_id || null,
                 name: item.name,
                 description: item.description || null,
@@ -403,11 +416,17 @@ export const api = {
                 offer_price: item.offer_price?.toString() || null,
                 prep_time: item.prep_time || null
             });
+            
+            if (!updatedProduct) {
+                logger.warn('API_MENU', '⚠️ Update returned null', { itemId: item.id });
+                return null;
+            }
+            
             logger.info('API_MENU', '✅ Menu item updated in Supabase', { name: item.name });
-            return true;
+            return updatedProduct;
         } catch (error) {
             logger.error('API_MENU', '❌ Error updating menu item', error);
-            return false;
+            return null;
         }
     },
     deleteMenuItem: async (id: string): Promise<boolean> => {

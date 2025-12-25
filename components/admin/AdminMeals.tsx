@@ -19,7 +19,7 @@ interface AdminMealsProps {
 export const AdminMeals: React.FC<AdminMealsProps> = ({ meals, chefs, onAdd, onEdit, onDelete }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [currentMeal, setCurrentMeal] = useState<MenuItem | null>(null);
-    const [formData, setFormData] = useState<any>({ name: '', description: '', price: '', category: '', chef_id: '', image_url: '' });
+    const [formData, setFormData] = useState<any>({ name: '', description: '', price: '', category: '', chef_id: '', image_url: '', prep_time: '30' });
     const [formErrors, setFormErrors] = useState<Record<string, string>>({});
     const [isLoading, setIsLoading] = useState(false);
     const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
@@ -33,7 +33,7 @@ export const AdminMeals: React.FC<AdminMealsProps> = ({ meals, chefs, onAdd, onE
     };
 
     const clearForm = () => {
-        setFormData({ name: '', description: '', price: '', category: '', chef_id: '', image_url: '' });
+        setFormData({ name: '', description: '', price: '', category: '', chef_id: '', image_url: '', prep_time: '30' });
         setFormErrors({});
         setImagePreview('');
         if (imageRef.current) imageRef.current.value = '';
@@ -42,7 +42,7 @@ export const AdminMeals: React.FC<AdminMealsProps> = ({ meals, chefs, onAdd, onE
     const openAdd = () => {
         setCurrentMeal(null);
         clearForm();
-        setFormData({ name: '', description: '', price: '', category: 'مشويات', chef_id: '', image_url: '' });
+        setFormData({ name: '', description: '', price: '', category: 'مشويات', chef_id: '', image_url: '', prep_time: '30' });
         setIsModalOpen(true);
     };
 
@@ -54,7 +54,8 @@ export const AdminMeals: React.FC<AdminMealsProps> = ({ meals, chefs, onAdd, onE
             price: meal.price,
             category: meal.category,
             chef_id: meal.chef_id,
-            image_url: meal.image_url || ''
+            image_url: meal.image_url || '',
+            prep_time: meal.prep_time ? String(meal.prep_time) : '30'
         });
         setImagePreview(meal.image_url || '');
         setFormErrors({});
@@ -119,6 +120,7 @@ export const AdminMeals: React.FC<AdminMealsProps> = ({ meals, chefs, onAdd, onE
                 category: formData.category,
                 chef_id: formData.chef_id || null,
                 image_url: imageUrl || null,
+                prep_time: Number(formData.prep_time) || 30, // Preparation time in minutes
                 is_available: true,
                 is_featured: false,
                 is_offer: false
@@ -134,12 +136,13 @@ export const AdminMeals: React.FC<AdminMealsProps> = ({ meals, chefs, onAdd, onE
                     ...mealData
                 };
                 
-                const success = await api.updateMenuItem(updatedMeal);
-                if (!success) {
+                const result = await api.updateMenuItem(updatedMeal);
+                if (!result) {
                     throw new Error('Failed to update meal');
                 }
                 
-                onEdit(updatedMeal);
+                // Use the returned product data from database
+                onEdit(result);
                 logger.info('ADMIN_MEALS', '✏️ Meal updated successfully', { mealId: currentMeal.id, mealName: mealData.name });
                 showNotification('success', 'تم تحديث الوجبة بنجاح! ✅');
             } else {
@@ -236,6 +239,7 @@ export const AdminMeals: React.FC<AdminMealsProps> = ({ meals, chefs, onAdd, onE
                             <th className="p-4 text-gray-700 font-bold">الصورة</th>
                             <th className="p-4 text-gray-700 font-bold">اسم الوجبة</th>
                             <th className="p-4 text-gray-700 font-bold">السعر</th>
+                            <th className="p-4 text-gray-700 font-bold">مدة التحضير</th>
                             <th className="p-4 text-gray-700 font-bold">القسم</th>
                             <th className="p-4 text-gray-700 font-bold">الشيف</th>
                             <th className="p-4 text-gray-700 font-bold">الوصف</th>
@@ -252,6 +256,12 @@ export const AdminMeals: React.FC<AdminMealsProps> = ({ meals, chefs, onAdd, onE
                                 </td>
                                 <td className="p-4 font-bold">{meal.name}</td>
                                 <td className="p-4 text-[#8B2525] font-bold">{meal.price} ج.م</td>
+                                <td className="p-4 text-sm text-gray-600">
+                                    <div className="flex items-center gap-1">
+                                        <i className="fa-solid fa-clock text-gray-400"></i>
+                                        <span>{meal.prep_time || 30} د</span>
+                                    </div>
+                                </td>
                                 <td className="p-4 text-sm text-gray-600">{meal.category}</td>
                                 <td className="p-4 text-sm text-gray-600">{chef?.chef_name || '-'}</td>
                                 <td className="p-4 text-sm text-gray-600">{meal.description || '-'}</td>
@@ -381,6 +391,24 @@ export const AdminMeals: React.FC<AdminMealsProps> = ({ meals, chefs, onAdd, onE
                     onChange={e => setFormData({...formData, description: e.target.value})}
                     disabled={isLoading}
                 />
+
+                {/* Preparation Time */}
+                <div className="space-y-1">
+                    <label htmlFor="prep-time" className="block text-sm font-bold text-gray-700">مدة التحضير (بالدقائق)</label>
+                    <input
+                        id="prep-time"
+                        type="number"
+                        placeholder="مدة التحضير (مثال: 30)"
+                        min="1"
+                        max="300"
+                        className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 text-gray-900"
+                        value={formData.prep_time}
+                        onChange={e => setFormData({...formData, prep_time: e.target.value})}
+                        disabled={isLoading}
+                        required
+                    />
+                    <p className="text-xs text-gray-500">الوقت المتوقع لتحضير الوجبة بالدقائق (افتراضي: 30 دقيقة)</p>
+                </div>
 
                 {/* Submit Button */}
                 <button

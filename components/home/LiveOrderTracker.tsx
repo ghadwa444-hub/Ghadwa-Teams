@@ -22,7 +22,11 @@ export const LiveOrderTracker: React.FC<LiveOrderTrackerProps> = ({ order, onTra
                 setProgress(10);
                 setTimeLeft(60);
                 break;
-            case 'cooking':
+            case 'confirmed':
+                setProgress(20);
+                setTimeLeft(55);
+                break;
+            case 'preparing':
                 setProgress(40);
                 setTimeLeft(45);
                 break;
@@ -64,7 +68,8 @@ export const LiveOrderTracker: React.FC<LiveOrderTrackerProps> = ({ order, onTra
                             
                             <h2 className="text-2xl md:text-3xl font-bold mb-2">
                                 {order.status === 'pending' && 'طلبك قيد المراجعة 🕒'}
-                                {order.status === 'cooking' && 'الشيف بيجهز طلبك 🔥'}
+                                {order.status === 'confirmed' && 'تم تأكيد طلبك ✅'}
+                                {order.status === 'preparing' && 'الشيف بيجهز طلبك 🔥'}
                                 {order.status === 'out_for_delivery' && 'طلبك في الطريق ليك 🛵'}
                             </h2>
                             <p className="text-gray-400 text-sm mb-6">

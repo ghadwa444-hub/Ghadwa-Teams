@@ -17,15 +17,18 @@ export class SupabaseDataService {
     try {
       logger.info('SUPABASE', '🔍 Fetching chefs...');
       
+      // Don't filter by is_active here - let RLS handle it
+      // RLS will return:
+      // - All chefs (including inactive) for admins
+      // - Only active chefs for regular users
       const { data, error } = await supabase
         .from('chefs')
         .select('*')
-        .eq('is_active', true)
         .order('rating', { ascending: false });
 
       if (error) throw error;
 
-      logger.info('SUPABASE', `✅ Fetched ${data.length} chefs`);
+      logger.info('SUPABASE', `✅ Fetched ${data.length} chefs (RLS filtered)`);
       return data || [];
     } catch (error) {
       logger.error('SUPABASE', '❌ Failed to fetch chefs', error);
@@ -132,29 +135,51 @@ export class SupabaseDataService {
 
   async updateChef(id: string, updates: Partial<Chef>): Promise<Chef | null> {
     try {
-      logger.info('SUPABASE', '📝 Updating chef...', { id });
+      logger.info('SUPABASE', '📝 Updating chef...', { id, updates });
 
       if (!this.isValidUUID(id)) {
         throw new Error(`Invalid chef id (expected UUID): ${id}`);
       }
 
       const payload = this.sanitizeChefPayload(updates);
+      logger.info('SUPABASE', '📝 Update payload', { payload });
 
-      // Use maybeSingle to avoid throwing when 0 rows are returned
-      const { data, error } = await supabase
+      // First, try to update without select to see if it works
+      const { error: updateError, count } = await supabase
         .from('chefs')
         .update(payload)
         .eq('id', id)
-        .select()
+        .select('id', { count: 'exact', head: true });
+
+      if (updateError) {
+        logger.error('SUPABASE', '❌ Update error', updateError);
+        throw updateError;
+      }
+
+      logger.info('SUPABASE', '📝 Update count', { count });
+
+      // Now fetch the updated chef
+      const { data, error: selectError } = await supabase
+        .from('chefs')
+        .select('*')
+        .eq('id', id)
         .maybeSingle();
 
-      if (error) throw error;
+      if (selectError) {
+        logger.error('SUPABASE', '❌ Select error after update', selectError);
+        throw selectError;
+      }
 
-      logger.info('SUPABASE', '✅ Chef updated successfully');
+      if (!data) {
+        logger.warn('SUPABASE', '⚠️ Chef not found after update', { id });
+        return null;
+      }
+
+      logger.info('SUPABASE', '✅ Chef updated successfully', { chefId: id, is_active: data.is_active });
       return data;
     } catch (error) {
       logger.error('SUPABASE', '❌ Failed to update chef', error);
-      return null;
+      throw error; // Re-throw so caller can handle it
     }
   }
 

@@ -182,10 +182,18 @@ const App = () => {
     const currentChefName = cart.length > 0 ? cart[0].chef : null;
 
     // Find the most recent active order (not delivered) for the Live Tracker
-    // Sort by ID descending (newest first) and get the first non-delivered order
-    const activeOrder = [...orders]
-        .sort((a, b) => b.id - a.id)
-        .find(o => o.status !== 'delivered');
+    // Only show orders for the current logged-in user
+    // Sort by created_at descending (newest first) and get the first non-delivered order
+    const activeOrder = currentUser 
+        ? [...orders]
+            .filter(o => o.customer_id === currentUser.id)
+            .sort((a, b) => {
+                const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
+                const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
+                return dateB - dateA;
+            })
+            .find(o => o.status !== 'delivered' && o.status !== 'cancelled')
+        : null;
 
     // Fetch Data on Mount
     useEffect(() => {
@@ -371,12 +379,55 @@ const App = () => {
         setSelectedOrder(order);
         setActivePage('admin-order-details');
     }
-    const toggleChefStatus = (id: string) => {
-        const updatedChefs = chefs.map(c => c.id === id ? {...c, is_active: !c.is_active} : c);
-        const chef = updatedChefs.find(c => c.id === id);
-        logger.info('ADMIN_CHEFS', `🔄 Chef status toggled`, { chefId: id, chefName: chef?.chef_name, isNowActive: chef?.is_active });
+    const toggleChefStatus = async (id: string) => {
+        const chef = chefs.find(c => c.id === id);
+        if (!chef) {
+            console.error('Chef not found:', id);
+            throw new Error('Chef not found');
+        }
+
+        const oldStatus = chef.is_active;
+        const newStatus = !oldStatus;
+        logger.info('ADMIN_CHEFS', `🔄 Toggling chef status`, { chefId: id, chefName: chef.chef_name, oldStatus, newStatus });
+
+        // Save original state for rollback
+        const originalChefs = [...chefs];
+
+        // Optimistically update UI
+        const updatedChefs = chefs.map(c => c.id === id ? {...c, is_active: newStatus} : c);
         setChefs(updatedChefs);
-        if (chef) api.updateChef(chef);
+
+        try {
+            // Update in database
+            const updatedChef = {...chef, is_active: newStatus};
+            const result = await api.updateChef(updatedChef);
+            
+            if (!result) {
+                throw new Error('Failed to update chef status in database - no data returned');
+            }
+            
+            // Verify the update was successful
+            if (result.is_active !== newStatus) {
+                logger.warn('ADMIN_CHEFS', `⚠️ Status mismatch after update`, { 
+                    chefId: id, 
+                    expected: newStatus, 
+                    actual: result.is_active 
+                });
+                // Update local state with the actual result from database
+                setChefs(prev => prev.map(c => c.id === id ? {...c, is_active: result.is_active} : c));
+            } else {
+                // Update local state with the confirmed result
+                setChefs(prev => prev.map(c => c.id === id ? result : c));
+            }
+
+            logger.info('ADMIN_CHEFS', `✅ Chef status updated successfully`, { chefId: id, chefName: chef.chef_name, isNowActive: result.is_active });
+        } catch (error) {
+            console.error('Error updating chef status:', error);
+            // Revert UI change on error
+            setChefs(originalChefs);
+            logger.error('ADMIN_CHEFS', `❌ Failed to update chef status, reverted changes`, { chefId: id, error });
+            throw error; // Re-throw so AdminChefs can show error notification
+        }
     };
     const handleAddChef = (newChef: Chef) => {
         logger.info('ADMIN_CHEFS', '➕ New chef added', { chefName: newChef.chef_name, specialty: newChef.specialty });
@@ -399,19 +450,22 @@ const App = () => {
     const handleAddMeal = (newMeal: MenuItem) => {
         logger.info('ADMIN_MEALS', '➕ New meal added', { mealName: newMeal.name, price: newMeal.price });
         setMenuItems([...menuItems, newMeal]);
-        api.addMenuItem(newMeal);
+        // Meal is already saved to database in AdminMeals component via api.addMenuItem()
+        // No need to call it again here to avoid duplicates
     }
     const handleEditMeal = (updatedMeal: MenuItem) => {
         logger.info('ADMIN_MEALS', '✏️ Meal updated', { mealId: updatedMeal.id, mealName: updatedMeal.name });
         setMenuItems(prev => prev.map(m => m.id === updatedMeal.id ? updatedMeal : m));
-        api.updateMenuItem(updatedMeal);
+        // Meal is already updated in database in AdminMeals component via api.updateMenuItem()
+        // No need to call it again here to avoid duplicates
     }
     
     const handleDeleteMeal = (id: string) => { 
         const meal = menuItems.find(m => m.id === id);
         logger.warn('ADMIN_MEALS', '🗑️ Meal deleted', { mealId: id, mealName: meal?.name });
         setMenuItems(prev => prev.filter(m => m.id !== id)); 
-        api.deleteMenuItem(id);
+        // Meal is already deleted from database in AdminMeals component via api.deleteMenuItem()
+        // No need to call it again here to avoid duplicates
     }
     
     const handleAddOffer = (newOffer: MenuItem) => {
@@ -454,23 +508,28 @@ const App = () => {
         }
     }
     
-    const handleAddBestSeller = (newItem: MenuItem) => {
+    const handleAddBestSeller = async (newItem: MenuItem) => {
         logger.info('ADMIN_BESTSELLERS', '➕ Best seller added', { itemName: newItem.name });
         setBestSellers([...bestSellers, newItem]);
-        api.addBestSeller(newItem);
+        // Best sellers are just menu items with is_featured=true
+        // The item is already added via api.addMenuItem in AdminBestSellers component
+        // No need to call API again here
     }
-    const handleEditBestSeller = (updatedItem: MenuItem) => {
+    const handleEditBestSeller = async (updatedItem: MenuItem) => {
         logger.info('ADMIN_BESTSELLERS', '✏️ Best seller updated', { itemId: updatedItem.id, itemName: updatedItem.name });
         setBestSellers(prev => prev.map(i => i.id === updatedItem.id ? updatedItem : i));
-        api.updateBestSeller(updatedItem);
+        // Best sellers are just menu items with is_featured=true
+        // The item is already updated via api.updateMenuItem in AdminBestSellers component
+        // No need to call API again here
     }
     
-    const handleDeleteBestSeller = (id: string) => { 
+    const handleDeleteBestSeller = async (id: string) => { 
         if(window.confirm('هل أنت متأكد من حذف الوجبة من الأكثر مبيعاً؟')) {
             const item = bestSellers.find(i => i.id === id);
             logger.warn('ADMIN_BESTSELLERS', '🗑️ Best seller deleted', { itemId: id, itemName: item?.name });
             setBestSellers(prev => prev.filter(i => i.id !== id)); 
-            api.deleteBestSeller(id);
+            // Delete the menu item (best sellers are just menu items)
+            await api.deleteMenuItem(id);
         }
     }
     
@@ -621,9 +680,10 @@ const App = () => {
                 isOpen={orderSuccess.isOpen} 
                 orderId={orderSuccess.orderId} 
                 onTrack={() => {
-                    setOrderSuccess({ ...orderSuccess, isOpen: false });
-                    setTrackOrderId(orderSuccess.orderId);
-                    setActivePage('track-order');
+                    // Track order feature disabled
+                    // setOrderSuccess({ ...orderSuccess, isOpen: false });
+                    // setTrackOrderId(orderSuccess.orderId);
+                    // setActivePage('track-order');
                 }}
                 onClose={() => {
                     setOrderSuccess({ ...orderSuccess, isOpen: false });
@@ -688,7 +748,7 @@ const App = () => {
                         <main>
                             <Hero onNavigate={setActivePage} onOpenMenu={() => setIsMenuOpen(true)} onOpenAuth={() => setIsAuthOpen(true)} />
                             
-                            {activeOrder && (
+                            {/* {activeOrder && (
                                 <LiveOrderTracker 
                                     order={activeOrder} 
                                     onTrackClick={() => {
@@ -696,7 +756,7 @@ const App = () => {
                                         setActivePage('track-order');
                                     }} 
                                 />
-                            )}
+                            )} */}
 
                             <Features />
                             <WeeklyOffers offers={offers} cart={cart} updateQuantity={updateQuantity} />
@@ -706,10 +766,10 @@ const App = () => {
                             <ChefsSection onNavigate={setActivePage} onChefClick={(chef) => {
                                 setSelectedChef(chef);
                                 setActivePage('chef-details');
-                            }} chefs={chefs} />
+                            }} chefs={chefs} orders={orders} />
                             <BestSellers cart={cart} updateQuantity={updateQuantity} chefs={chefs} bestSellers={bestSellers} />
                             <BoxesSection boxes={boxes} cart={cart} updateQuantity={updateQuantity} />
-                            <FullMenu menuItems={menuItems} cart={cart} updateQuantity={updateQuantity} />
+                            <FullMenu menuItems={menuItems} cart={cart} updateQuantity={updateQuantity} chefs={chefs} />
                         </main>
                     )}
 
@@ -734,7 +794,8 @@ const App = () => {
 
                     {activePage === 'all-chefs' && (
                         <AllChefsPage 
-                            chefs={chefs} 
+                            chefs={chefs}
+                            orders={orders} 
                             onBack={() => setActivePage('home')}
                             onChefClick={(chef) => {
                                 setSelectedChef(chef);

@@ -1,6 +1,6 @@
 
 import React from 'react'
-import { Chef } from '../../types'
+import { Chef, Order } from '../../types'
 import { SectionTitle } from './SectionTitle'
 import { ChefCard } from './ChefCard'
 
@@ -8,9 +8,18 @@ interface ChefsSectionProps {
     onNavigate: (page: string) => void;
     onChefClick: (chef: Chef) => void;
     chefs: Chef[];
+    orders?: Order[]; // Optional orders to calculate order count
 }
 
-export const ChefsSection: React.FC<ChefsSectionProps> = ({ onNavigate, onChefClick, chefs }) => {
+export const ChefsSection: React.FC<ChefsSectionProps> = ({ onNavigate, onChefClick, chefs, orders = [] }) => {
+    // Helper function to get order count for a chef
+    const getChefOrdersCount = (chefId: string): number => {
+        if (!orders || orders.length === 0) return 0;
+        return orders.filter(order => {
+            if (!order.chef_id || !chefId) return false;
+            return String(order.chef_id).trim().toLowerCase() === String(chefId).trim().toLowerCase();
+        }).length;
+    };
     return (
     <section className="py-12 sm:py-16 md:py-20 lg:py-24 bg-white" id="chefs">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -35,6 +44,7 @@ export const ChefsSection: React.FC<ChefsSectionProps> = ({ onNavigate, onChefCl
                             key={chef.id}
                             chef={chef}
                             onClick={() => onChefClick(chef)}
+                            ordersCount={getChefOrdersCount(chef.id)}
                         />
                     ))}
                 </div>

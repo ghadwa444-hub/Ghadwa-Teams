@@ -323,7 +323,8 @@ export function validatePromoExpiryDate(
 // ============================================
 
 export function validateOrderStatus(status: string): ValidationResult {
-  const validStatuses = ['pending', 'preparing', 'ready', 'completed', 'cancelled'];
+  // Match the database CHECK constraint: pending, confirmed, preparing, out_for_delivery, delivered, cancelled
+  const validStatuses = ['pending', 'confirmed', 'preparing', 'out_for_delivery', 'delivered', 'cancelled'];
 
   if (!status || !status.trim()) {
     return { valid: false, error: 'Order status is required' };
