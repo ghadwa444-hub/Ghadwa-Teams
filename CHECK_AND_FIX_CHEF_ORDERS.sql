@@ -101,3 +101,4 @@ LEFT JOIN public.orders o ON c.id = o.chef_id
 GROUP BY c.id, c.chef_name
 ORDER BY total_revenue DESC;
 
+

@@ -107,3 +107,4 @@ WHERE id = '[product_id]';
 4. **الأوردرات غير محملة:**
    - الحل: تحقق من RLS policies و refresh الصفحة
 
+

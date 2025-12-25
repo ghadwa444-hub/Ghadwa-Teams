@@ -45,3 +45,4 @@ FROM auth.users
 WHERE email = 'admin@ghadwa.com';
 -- Should return 0
 
+

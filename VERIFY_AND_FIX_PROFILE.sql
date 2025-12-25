@@ -94,3 +94,4 @@ WHERE u.email = 'admin@ghadwa.com'
   AND p.role = 'admin'
   AND p.is_active = true;
 
+
