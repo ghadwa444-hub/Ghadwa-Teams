@@ -363,15 +363,17 @@ export const api = {
             const createdProduct = await supabaseDataService.createProduct({
                 chef_id: item.chef_id || null,
                 name: item.name,
+                title: item.title || item.name, // Include title for DB sync
                 description: item.description || null,
                 price: item.price,
                 image_url: item.image_url || null,
-                category: item.category || null,
+                category: item.category || 'main',
                 is_available: item.is_available ?? true,
                 is_featured: item.is_featured ?? false,
                 is_offer: item.is_offer ?? false,
                 offer_price: item.offer_price || null,
-                prep_time: item.prep_time || null
+                prep_time: item.prep_time || 30, // Default prep time
+                is_active: item.is_available ?? true // Sync with is_available
             });
             
             if (!createdProduct) {

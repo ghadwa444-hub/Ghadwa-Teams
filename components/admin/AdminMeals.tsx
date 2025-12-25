@@ -74,6 +74,8 @@ export const AdminMeals: React.FC<AdminMealsProps> = ({ meals, chefs, onAdd, onE
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        
+        console.log('🔍 Form submission started', { formData });
 
         const validation = validateProductForm({
             name: formData.name,
@@ -82,7 +84,10 @@ export const AdminMeals: React.FC<AdminMealsProps> = ({ meals, chefs, onAdd, onE
             description: formData.description || '',
         });
 
+        console.log('✅ Validation result:', validation);
+
         if (!validation.valid) {
+            console.error('❌ Validation failed:', validation.errors);
             setFormErrors(validation.errors);
             showNotification('error', 'الرجاء تصحيح الأخطاء');
             return;
@@ -90,6 +95,7 @@ export const AdminMeals: React.FC<AdminMealsProps> = ({ meals, chefs, onAdd, onE
 
         setIsLoading(true);
         setFormErrors({});
+        console.log('📤 Starting API call...');
 
         try {
             let imageUrl = formData.image_url;

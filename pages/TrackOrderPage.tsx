@@ -202,7 +202,7 @@ export const TrackOrderPage: React.FC<TrackOrderPageProps> = ({ orders, initialO
                                             <div className="flex justify-between items-center">
                                                 <div className="flex items-center gap-4">
                                                     <div className="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center text-[#8B2525] font-bold text-sm group-hover:bg-[#8B2525] group-hover:text-white transition-colors">
-                                                        {order.order_number ? `#${order.order_number.split('-').pop()}` : `#${order.id.slice(0, 8)}`}
+                                                        {order.order_number ? `#${order.order_number.split('-').pop()}` : `#${String(order.id).slice(0, 8)}`}
                                                     </div>
                                                     <div>
                                                         <p className="font-bold text-gray-900 mb-1">{order.total_amount || order.total || 0} ج.م</p>
@@ -250,7 +250,7 @@ export const TrackOrderPage: React.FC<TrackOrderPageProps> = ({ orders, initialO
                                             <div className="flex justify-between items-center mb-3" onClick={() => setFoundOrder(order)}>
                                                 <div className="flex items-center gap-4">
                                                     <div className="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center text-[#8B2525] font-bold text-sm group-hover:bg-[#8B2525] group-hover:text-white transition-colors">
-                                                        {order.order_number ? `#${order.order_number.split('-').pop()}` : `#${order.id.slice(0, 8)}`}
+                                                        {order.order_number ? `#${order.order_number.split('-').pop()}` : `#${String(order.id).slice(0, 8)}`}
                                                     </div>
                                                     <div>
                                                         <p className="font-bold text-gray-900 mb-1 line-clamp-1">{order.total_amount || order.total || 0} ج.م</p>
@@ -319,7 +319,7 @@ export const TrackOrderPage: React.FC<TrackOrderPageProps> = ({ orders, initialO
                                 'bg-[#8B2525]'
                             }`}>
                                 <p className="text-white/80 text-sm mb-1">
-                                    {foundOrder.order_number ? `طلب رقم ${foundOrder.order_number}` : `طلب رقم #${foundOrder.id.slice(0, 8)}`}
+                                    {foundOrder.order_number ? `طلب رقم ${foundOrder.order_number}` : `طلب رقم #${String(foundOrder.id).slice(0, 8)}`}
                                 </p>
                                 <h2 className="text-2xl font-bold">
                                     {foundOrder.status === 'delivered' ? 'تم التوصيل بنجاح 🎉' : 

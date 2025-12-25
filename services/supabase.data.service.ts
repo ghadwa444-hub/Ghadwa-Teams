@@ -62,12 +62,30 @@ export class SupabaseDataService {
     // Sync them for backward compatibility
     if (product.name !== undefined) {
       out.title = product.name; // Sync name → title (title is NOT NULL in DB)
+    } else if (product.title !== undefined) {
+      out.title = product.title; // Use title if provided directly
+      out.name = product.title; // Sync title → name
     }
     if (product.is_available !== undefined) {
       out.is_active = product.is_available; // Sync is_available → is_active
+    } else if (product.is_active !== undefined) {
+      out.is_active = product.is_active; // Use is_active if provided directly
+      out.is_available = product.is_active; // Sync is_active → is_available
     }
     if (product.prep_time !== undefined) {
       out.preparation_time = product.prep_time; // Sync prep_time → preparation_time
+    } else if (product.preparation_time !== undefined) {
+      out.preparation_time = product.preparation_time; // Use preparation_time if provided directly
+      out.prep_time = product.preparation_time; // Sync preparation_time → prep_time
+    } else {
+      // Default prep_time if not provided
+      out.prep_time = 30;
+      out.preparation_time = 30;
+    }
+    
+    // Ensure category has a default value
+    if (!out.category) {
+      out.category = 'main';
     }
     
     return out;

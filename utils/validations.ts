@@ -148,9 +148,11 @@ export function validateProductCategory(category: string): ValidationResult {
 export function validateProductDescription(
   description: string
 ): ValidationResult {
+  // Description is optional - if empty, it's valid
   if (!description || !description.trim()) {
-    return { valid: false, error: 'Description is required' };
+    return { valid: true };
   }
+  // If provided, validate length
   if (description.trim().length < 5) {
     return {
       valid: false,
@@ -438,11 +440,14 @@ export function validateProductForm(productData: {
   if (!categoryValidation.valid)
     errors.category = categoryValidation.error!;
 
-  const descriptionValidation = validateProductDescription(
-    productData.description
-  );
-  if (!descriptionValidation.valid)
-    errors.description = descriptionValidation.error!;
+  // Description is optional, only validate if provided
+  if (productData.description && productData.description.trim()) {
+    const descriptionValidation = validateProductDescription(
+      productData.description
+    );
+    if (!descriptionValidation.valid)
+      errors.description = descriptionValidation.error!;
+  }
 
   return {
     valid: Object.keys(errors).length === 0,
