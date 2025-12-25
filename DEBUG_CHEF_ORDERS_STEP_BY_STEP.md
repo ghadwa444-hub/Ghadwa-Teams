@@ -108,3 +108,5 @@ WHERE id = '[product_id]';
    - الحل: تحقق من RLS policies و refresh الصفحة
 
 
+
+

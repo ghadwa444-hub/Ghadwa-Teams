@@ -95,3 +95,5 @@ WHERE u.email = 'admin@ghadwa.com'
   AND p.is_active = true;
 
 
+
+
