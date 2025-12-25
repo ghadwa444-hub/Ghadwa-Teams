@@ -183,6 +183,7 @@ export interface ContactSettings {
   whatsapp?: string;
   instagram?: string;
   facebook?: string;
+  linkedin?: string;
   working_hours?: string;
   updated_at?: string;
 }

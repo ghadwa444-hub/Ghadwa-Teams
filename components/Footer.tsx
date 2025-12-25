@@ -13,9 +13,15 @@ export const Footer: React.FC<FooterProps> = ({ contactSettings }) => {
         whatsapp: "201109318581",
         email: "ghadwa444@gmail.com",
         address: "طنطا، مصر",
-        facebookUrl: "#",
-        instagramUrl: "#",
+        facebook: "#",
+        instagram: "#",
+        linkedin: "#",
     };
+    
+    // Map database fields to display fields
+    const facebookUrl = settings.facebook || "#";
+    const instagramUrl = settings.instagram || "#";
+    const linkedinUrl = settings.linkedin || "#";
 
     const currentYear = new Date().getFullYear();
 
@@ -37,24 +43,39 @@ export const Footer: React.FC<FooterProps> = ({ contactSettings }) => {
                             هدفنا نوصلك أكل بيتي نضيف وطعمه زي أكل ماما.
                         </p>
                         <div className="flex gap-3 sm:gap-4">
-                            <a
-                                href={settings.facebookUrl}
-                                target="_blank"
-                                rel="noreferrer"
-                                aria-label="تابعنا على فيسبوك"
-                                className="w-9 sm:w-10 h-9 sm:h-10 rounded-full bg-gray-800 flex items-center justify-center text-gray-400 hover:bg-[#8B2525] hover:text-white transition text-sm sm:text-base"
-                            >
-                                <i className="fa-brands fa-facebook-f"></i>
-                            </a>
-                            <a
-                                href={settings.instagramUrl}
-                                target="_blank"
-                                rel="noreferrer"
-                                aria-label="تابعنا على إنستجرام"
-                                className="w-9 sm:w-10 h-9 sm:h-10 rounded-full bg-gray-800 flex items-center justify-center text-gray-400 hover:bg-[#8B2525] hover:text-white transition text-sm sm:text-base"
-                            >
-                                <i className="fa-brands fa-instagram"></i>
-                            </a>
+                            {facebookUrl !== "#" && (
+                                <a
+                                    href={facebookUrl}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    aria-label="تابعنا على فيسبوك"
+                                    className="w-9 sm:w-10 h-9 sm:h-10 rounded-full bg-gray-800 flex items-center justify-center text-gray-400 hover:bg-[#8B2525] hover:text-white transition text-sm sm:text-base"
+                                >
+                                    <i className="fa-brands fa-facebook-f"></i>
+                                </a>
+                            )}
+                            {instagramUrl !== "#" && (
+                                <a
+                                    href={instagramUrl}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    aria-label="تابعنا على إنستجرام"
+                                    className="w-9 sm:w-10 h-9 sm:h-10 rounded-full bg-gray-800 flex items-center justify-center text-gray-400 hover:bg-[#8B2525] hover:text-white transition text-sm sm:text-base"
+                                >
+                                    <i className="fa-brands fa-instagram"></i>
+                                </a>
+                            )}
+                            {linkedinUrl && linkedinUrl !== "#" && (
+                                <a
+                                    href={linkedinUrl}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    aria-label="تابعنا على LinkedIn"
+                                    className="w-9 sm:w-10 h-9 sm:h-10 rounded-full bg-gray-800 flex items-center justify-center text-gray-400 hover:bg-[#0077B5] hover:text-white transition text-sm sm:text-base"
+                                >
+                                    <i className="fa-brands fa-linkedin-in"></i>
+                                </a>
+                            )}
                             {settings.whatsapp && (
                                 <a
                                     href={`https://wa.me/${settings.whatsapp}`}

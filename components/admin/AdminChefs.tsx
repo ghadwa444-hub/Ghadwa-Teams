@@ -1,6 +1,6 @@
 
 import React, { useState, useRef } from 'react';
-import { Chef } from '../../types';
+import { Chef, Order } from '../../types';
 import { AdminFormModal } from '../Modals';
 import { imageUploadService } from '../../services/imageUploadService';
 import { api } from '../../services/api';
@@ -8,13 +8,14 @@ import { logger } from '../../utils/logger';
 
 interface AdminChefsProps {
     chefs: Chef[];
+    orders: Order[];
     toggleChefStatus: (id: string) => void;
     onAdd: (chef: Chef) => void;
     onEdit: (chef: Chef) => void;
     onDelete: (id: string) => void;
 }
 
-export const AdminChefs: React.FC<AdminChefsProps> = ({ chefs, toggleChefStatus, onAdd, onEdit, onDelete }) => {
+export const AdminChefs: React.FC<AdminChefsProps> = ({ chefs, orders, toggleChefStatus, onAdd, onEdit, onDelete }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [currentChef, setCurrentChef] = useState<Chef | null>(null);
     const [formData, setFormData] = useState<any>({ name: '', specialty: '', bio: '', img: '' });
@@ -288,14 +289,69 @@ export const AdminChefs: React.FC<AdminChefsProps> = ({ chefs, toggleChefStatus,
                                 
                                 {/* Stats Grid */}
                                 <div className="grid grid-cols-2 gap-3 mb-4">
-                                    <div className="bg-gray-50 p-3 rounded-2xl border border-gray-100 text-center">
-                                        <p className="text-[10px] text-gray-500 font-bold mb-1">التقييم</p>
-                                        <p className="font-black text-gray-900 text-lg">{chef.rating.toFixed(1)} ⭐</p>
-                                    </div>
-                                    <div className="bg-gray-50 p-3 rounded-2xl border border-gray-100 text-center">
-                                        <p className="text-[10px] text-gray-500 font-bold mb-1">الحالة</p>
-                                        <p className="font-black text-[#8B2525] text-lg">{chef.is_active ? 'نشط' : 'معطل'}</p>
-                                    </div>
+                                    {(() => {
+                                        // Calculate chef stats from orders
+                                        // Filter orders by chef_id - handle both string and null cases
+                                        let matchCount = 0;
+                                        const chefOrders = orders.filter(o => {
+                                            // Check if order has chef_id and it matches chef.id
+                                            if (!o.chef_id || !chef.id) {
+                                                // Debug: log orders without chef_id
+                                                if (!o.chef_id && orders.indexOf(o) < 3) {
+                                                    console.log(`Order ${o.id} has no chef_id`);
+                                                }
+                                                return false;
+                                            }
+                                            // Normalize both IDs for comparison (remove whitespace, convert to lowercase)
+                                            const orderChefId = String(o.chef_id).trim().toLowerCase();
+                                            const chefId = String(chef.id).trim().toLowerCase();
+                                            const matches = orderChefId === chefId;
+                                            
+                                            // Debug: log first few matches
+                                            if (matches) {
+                                                matchCount++;
+                                                if (matchCount <= 3) {
+                                                    console.log(`Order ${o.id} matches chef ${chef.chef_name}:`, {
+                                                        orderChefId,
+                                                        chefId,
+                                                        orderTotal: o.total_amount || o.total
+                                                    });
+                                                }
+                                            }
+                                            
+                                            return matches;
+                                        });
+                                        
+                                        const chefRevenue = chefOrders.reduce((acc, o) => {
+                                            const amount = Number(o.total_amount) || Number(o.total) || 0;
+                                            return acc + amount;
+                                        }, 0);
+                                        
+                                        const ordersCount = chefOrders.length;
+                                        
+                                        // Debug: log chef stats (always log for debugging)
+                                        console.log(`🔍 Chef ${chef.chef_name} (${chef.id}):`, {
+                                            totalOrders: orders.length,
+                                            chefOrders: ordersCount,
+                                            revenue: chefRevenue,
+                                            ordersWithChefId: orders.filter(o => o.chef_id).length,
+                                            allOrderChefIds: orders.filter(o => o.chef_id).map(o => o.chef_id).slice(0, 5),
+                                            chefId: chef.id
+                                        });
+                                        
+                                        return (
+                                            <>
+                                                <div className="bg-gray-50 p-3 rounded-2xl border border-gray-100 text-center">
+                                                    <p className="text-[10px] text-gray-500 font-bold mb-1">المبيعات</p>
+                                                    <p className="font-black text-gray-900 text-lg">{chefRevenue > 0 ? chefRevenue.toLocaleString('ar-EG') : '0'} ج.م</p>
+                                                </div>
+                                                <div className="bg-gray-50 p-3 rounded-2xl border border-gray-100 text-center">
+                                                    <p className="text-[10px] text-gray-500 font-bold mb-1">عدد الأوردرات</p>
+                                                    <p className="font-black text-[#8B2525] text-lg">{ordersCount}</p>
+                                                </div>
+                                            </>
+                                        );
+                                    })()}
                                 </div>
 
                                 <button 

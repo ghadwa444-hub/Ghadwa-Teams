@@ -11,26 +11,68 @@ interface TrackOrderPageProps {
 
 export const TrackOrderPage: React.FC<TrackOrderPageProps> = ({ orders, initialOrderId, onBack, onRateItem }) => {
     const [searchId, setSearchId] = useState(initialOrderId ? String(initialOrderId) : '');
+    const [searchPhone, setSearchPhone] = useState('');
+    const [searchType, setSearchType] = useState<'id' | 'phone'>('id'); // 'id' or 'phone'
     const [foundOrder, setFoundOrder] = useState<Order | null>(null);
+    const [foundOrders, setFoundOrders] = useState<Order[]>([]); // For phone search - multiple orders
     const [searched, setSearched] = useState(false);
 
     useEffect(() => {
         if (initialOrderId) {
-            handleSearch(String(initialOrderId));
+            setSearchType('id');
+            handleSearchById(String(initialOrderId));
         }
     }, [initialOrderId]);
 
-    const handleSearch = (id: string) => {
+    const handleSearchById = (id: string) => {
         if (!id) return;
         setSearched(true);
-        const order = orders.find(o => String(o.id) === id.trim());
+        setFoundOrders([]);
+        const order = orders.find(o => String(o.id) === id.trim() || o.order_number === id.trim());
         setFoundOrder(order || null);
+    };
+
+    const handleSearchByPhone = (phone: string) => {
+        if (!phone) return;
+        setSearched(true);
+        setFoundOrder(null);
+        // Normalize phone number (remove spaces, dashes, etc.)
+        const normalizedPhone = phone.trim().replace(/[\s\-\(\)]/g, '');
+        
+        // Search in both delivery_phone and customer_phone
+        const matchingOrders = orders.filter(o => {
+            const deliveryPhone = o.delivery_phone?.replace(/[\s\-\(\)]/g, '') || '';
+            const customerPhone = o.customer_phone?.replace(/[\s\-\(\)]/g, '') || '';
+            const legacyPhone = o.phone?.replace(/[\s\-\(\)]/g, '') || '';
+            
+            return deliveryPhone.includes(normalizedPhone) || 
+                   customerPhone.includes(normalizedPhone) ||
+                   legacyPhone.includes(normalizedPhone);
+        });
+        
+        setFoundOrders(matchingOrders);
+        
+        // If only one order found, show it directly
+        if (matchingOrders.length === 1) {
+            setFoundOrder(matchingOrders[0]);
+            setFoundOrders([]);
+        }
+    };
+
+    const handleSearch = () => {
+        if (searchType === 'id') {
+            handleSearchById(searchId);
+        } else {
+            handleSearchByPhone(searchPhone);
+        }
     };
 
     const clearSearch = () => {
         setFoundOrder(null);
+        setFoundOrders([]);
         setSearched(false);
         setSearchId('');
+        setSearchPhone('');
     };
 
     const getStatusStep = (status: string) => {
@@ -57,30 +99,135 @@ export const TrackOrderPage: React.FC<TrackOrderPageProps> = ({ orders, initialO
                     <>
                         <div className="text-center mb-10">
                             <h1 className="text-4xl font-bold text-gray-900 mb-4">تتبع طلبك 🛵</h1>
-                            <p className="text-gray-500">دخل رقم طلبك عشان تعرف وصل فين</p>
+                            <p className="text-gray-500">ابحث برقم الطلب أو رقم الهاتف</p>
+                        </div>
+
+                        {/* Search Type Toggle */}
+                        <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 mb-4 flex gap-2">
+                            <button
+                                onClick={() => {
+                                    setSearchType('id');
+                                    setSearchPhone('');
+                                    setFoundOrder(null);
+                                    setFoundOrders([]);
+                                    setSearched(false);
+                                }}
+                                className={`flex-1 py-2 px-4 rounded-xl font-bold transition ${
+                                    searchType === 'id'
+                                        ? 'bg-[#8B2525] text-white'
+                                        : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
+                                }`}
+                            >
+                                <i className="fa-solid fa-hashtag ml-2"></i>
+                                رقم الطلب
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setSearchType('phone');
+                                    setSearchId('');
+                                    setFoundOrder(null);
+                                    setFoundOrders([]);
+                                    setSearched(false);
+                                }}
+                                className={`flex-1 py-2 px-4 rounded-xl font-bold transition ${
+                                    searchType === 'phone'
+                                        ? 'bg-[#8B2525] text-white'
+                                        : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
+                                }`}
+                            >
+                                <i className="fa-solid fa-phone ml-2"></i>
+                                رقم الهاتف
+                            </button>
                         </div>
 
                         {/* Search Box */}
                         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 mb-8 flex flex-col md:flex-row gap-4">
-                            <input 
-                                type="text" 
-                                placeholder="رقم الطلب (مثال: 9543)"
-                                className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-[#8B2525] text-lg text-center md:text-right"
-                                value={searchId}
-                                onChange={(e) => setSearchId(e.target.value)}
-                                onKeyDown={(e) => e.key === 'Enter' && handleSearch(searchId)}
-                            />
+                            {searchType === 'id' ? (
+                                <input 
+                                    type="text" 
+                                    placeholder="رقم الطلب (مثال: 9543 أو GHD-123)"
+                                    className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-[#8B2525] text-lg text-center md:text-right"
+                                    value={searchId}
+                                    onChange={(e) => setSearchId(e.target.value)}
+                                    onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                                />
+                            ) : (
+                                <input 
+                                    type="tel" 
+                                    placeholder="رقم الهاتف (مثال: 201234567890)"
+                                    className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-[#8B2525] text-lg text-center md:text-right"
+                                    value={searchPhone}
+                                    onChange={(e) => setSearchPhone(e.target.value)}
+                                    onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                                />
+                            )}
                             <button 
-                                onClick={() => handleSearch(searchId)}
+                                onClick={handleSearch}
                                 className="bg-[#8B2525] text-white px-8 py-3 rounded-xl font-bold hover:bg-[#6b1c1c] transition shadow-lg"
                             >
+                                <i className="fa-solid fa-magnifying-glass ml-2"></i>
                                 بحث
                             </button>
                         </div>
 
-                        {searched && !foundOrder && (
+                        {searched && !foundOrder && foundOrders.length === 0 && (
                             <div className="text-center py-8 bg-red-50 rounded-2xl border border-red-100 mb-8 animate-fade-in">
-                                <p className="text-red-600 font-bold">ملقناش طلب بالرقم ده، اتأكد من الرقم وحاول تاني.</p>
+                                <p className="text-red-600 font-bold">
+                                    {searchType === 'id' 
+                                        ? 'ملقناش طلب بالرقم ده، اتأكد من الرقم وحاول تاني.'
+                                        : 'ملقناش طلبات برقم الهاتف ده، اتأكد من الرقم وحاول تاني.'}
+                                </p>
+                            </div>
+                        )}
+
+                        {/* Multiple Orders Found (Phone Search) */}
+                        {foundOrders.length > 1 && (
+                            <div className="mb-8 animate-fade-in">
+                                <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4 mb-4">
+                                    <p className="text-blue-700 font-bold text-center">
+                                        <i className="fa-solid fa-info-circle ml-2"></i>
+                                        تم العثور على {foundOrders.length} طلب برقم الهاتف هذا
+                                    </p>
+                                </div>
+                                <div className="space-y-3">
+                                    {foundOrders.map(order => (
+                                        <div 
+                                            key={order.id} 
+                                            className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition cursor-pointer group"
+                                            onClick={() => {
+                                                setFoundOrder(order);
+                                                setFoundOrders([]);
+                                            }}
+                                        >
+                                            <div className="flex justify-between items-center">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center text-[#8B2525] font-bold text-sm group-hover:bg-[#8B2525] group-hover:text-white transition-colors">
+                                                        {order.order_number ? `#${order.order_number.split('-').pop()}` : `#${order.id.slice(0, 8)}`}
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-bold text-gray-900 mb-1">{order.total_amount || order.total || 0} ج.م</p>
+                                                        <p className="text-xs text-gray-500">{order.created_at ? new Date(order.created_at).toLocaleDateString('ar-EG') : '-'}</p>
+                                                    </div>
+                                                </div>
+                                                <div className="text-left">
+                                                    <span className={`px-3 py-1 rounded-full text-xs font-bold block mb-1 w-fit ml-auto ${
+                                                        order.status === 'delivered' ? 'bg-green-100 text-green-700' :
+                                                        order.status === 'out_for_delivery' ? 'bg-blue-100 text-blue-700' :
+                                                        order.status === 'preparing' ? 'bg-orange-100 text-orange-700' :
+                                                        'bg-yellow-100 text-yellow-700'
+                                                    }`}>
+                                                        {order.status === 'delivered' ? 'مكتمل' : 
+                                                         order.status === 'out_for_delivery' ? 'مع الطيار' :
+                                                         order.status === 'preparing' ? 'جاري التحضير' : 'قيد الانتظار'}
+                                                    </span>
+                                                    <button className="text-[#8B2525] text-sm font-bold hover:underline">
+                                                        عرض التفاصيل →
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
                         )}
 
@@ -102,12 +249,12 @@ export const TrackOrderPage: React.FC<TrackOrderPageProps> = ({ orders, initialO
                                         <div key={order.id} className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition cursor-pointer group">
                                             <div className="flex justify-between items-center mb-3" onClick={() => setFoundOrder(order)}>
                                                 <div className="flex items-center gap-4">
-                                                    <div className="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center text-[#8B2525] font-bold text-lg group-hover:bg-[#8B2525] group-hover:text-white transition-colors">
-                                                        #{order.id}
+                                                    <div className="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center text-[#8B2525] font-bold text-sm group-hover:bg-[#8B2525] group-hover:text-white transition-colors">
+                                                        {order.order_number ? `#${order.order_number.split('-').pop()}` : `#${order.id.slice(0, 8)}`}
                                                     </div>
                                                     <div>
-                                                        <p className="font-bold text-gray-900 mb-1 line-clamp-1">{order.total_amount} ج.م</p>
-                                                        <p className="text-xs text-gray-500">{new Date(order.created_at).toLocaleDateString('ar-EG')}</p>
+                                                        <p className="font-bold text-gray-900 mb-1 line-clamp-1">{order.total_amount || order.total || 0} ج.م</p>
+                                                        <p className="text-xs text-gray-500">{order.created_at ? new Date(order.created_at).toLocaleDateString('ar-EG') : '-'}</p>
                                                     </div>
                                                 </div>
                                                 <div className="text-left">
@@ -115,13 +262,16 @@ export const TrackOrderPage: React.FC<TrackOrderPageProps> = ({ orders, initialO
                                                         order.status === 'delivered' ? 'bg-green-100 text-green-700' :
                                                         order.status === 'out_for_delivery' ? 'bg-blue-100 text-blue-700' :
                                                         order.status === 'preparing' ? 'bg-orange-100 text-orange-700' :
+                                                        order.status === 'confirmed' ? 'bg-purple-100 text-purple-700' :
                                                         'bg-yellow-100 text-yellow-700'
                                                     }`}>
                                                         {order.status === 'delivered' ? 'مكتمل' : 
                                                          order.status === 'out_for_delivery' ? 'مع الطيار' :
-                                                         order.status === 'preparing' ? 'جاري التحضير' : 'قيد الانتظار'}
+                                                         order.status === 'preparing' ? 'جاري التحضير' :
+                                                         order.status === 'confirmed' ? 'مؤكد' :
+                                                         'قيد الانتظار'}
                                                     </span>
-                                                    <span className="font-bold text-[#8B2525] text-sm">{order.total_amount} ج.م</span>
+                                                    <span className="font-bold text-[#8B2525] text-sm">{order.total_amount || order.total || 0} ج.م</span>
                                                 </div>
                                             </div>
                                             
@@ -168,7 +318,9 @@ export const TrackOrderPage: React.FC<TrackOrderPageProps> = ({ orders, initialO
                                 foundOrder.status === 'out_for_delivery' ? 'bg-blue-600' :
                                 'bg-[#8B2525]'
                             }`}>
-                                <p className="text-white/80 text-sm mb-1">طلب رقم #{foundOrder.id}</p>
+                                <p className="text-white/80 text-sm mb-1">
+                                    {foundOrder.order_number ? `طلب رقم ${foundOrder.order_number}` : `طلب رقم #${foundOrder.id.slice(0, 8)}`}
+                                </p>
                                 <h2 className="text-2xl font-bold">
                                     {foundOrder.status === 'delivered' ? 'تم التوصيل بنجاح 🎉' : 
                                      foundOrder.status === 'out_for_delivery' ? 'طلبك مع الطيار وفي الطريق ليك 🛵' :
@@ -262,11 +414,11 @@ export const TrackOrderPage: React.FC<TrackOrderPageProps> = ({ orders, initialO
                                                 </div>
                                             ))}
                                             {!foundOrder.itemsDetails && <p className="font-bold text-gray-900 text-sm leading-relaxed">{foundOrder.items}</p>}
-                                        </div>_amount
+                                        </div>
                                         
                                         <div className="mt-3 pt-3 border-t border-dashed border-gray-200 flex justify-between items-center">
                                             <span className="font-bold text-gray-900">الإجمالي</span>
-                                            <span className="text-[#8B2525] font-black text-lg">{foundOrder.total} ج.م</span>
+                                            <span className="text-[#8B2525] font-black text-lg">{foundOrder.total_amount || foundOrder.total} ج.م</span>
                                         </div>
                                     </div>
                                 </div>

@@ -50,16 +50,46 @@ const App = () => {
     const [boxes, setBoxes] = useState<Box[]>([]);
     const [bestSellers, setBestSellers] = useState<MenuItem[]>([]);
     const [promoCodes, setPromoCodes] = useState<PromoCode[]>([]);
-    const [contactSettings, setContactSettings] = useState<ContactSettings>({
-        phone: '',
-        whatsapp: '',
-        email: '',
-        address: '',
-        facebookUrl: '',
-        instagramUrl: '',
-        tiktokUrl: ''
+    // Default contact settings values
+    const defaultContactSettings: ContactSettings = {
+        phone: '201109318581',
+        whatsapp: '201109318581',
+        email: 'ghadwa444@gmail.com',
+        address: 'طنطا، مصر',
+        facebook: '',
+        instagram: '',
+        linkedin: '',
+        working_hours: 'السبت - الخميس: 10 ص - 11 م\nالجمعة: مغلق'
+    };
+
+    const [contactSettings, setContactSettings] = useState<ContactSettings>(defaultContactSettings);
+    
+    // Track visitors using localStorage
+    const [visitors, setVisitors] = useState(() => {
+        const stored = localStorage.getItem('ghadwa_visitors');
+        if (stored) {
+            return parseInt(stored, 10);
+        }
+        // Initialize with base count
+        const baseCount = 1250;
+        localStorage.setItem('ghadwa_visitors', baseCount.toString());
+        return baseCount;
     });
-    const [visitors, setVisitors] = useState(1250);
+    
+    // Increment visitors on mount (only once per session)
+    useEffect(() => {
+        const sessionKey = 'ghadwa_session_visit';
+        const hasVisited = sessionStorage.getItem(sessionKey);
+        
+        if (!hasVisited) {
+            setVisitors(prev => {
+                const newCount = prev + 1;
+                localStorage.setItem('ghadwa_visitors', newCount.toString());
+                sessionStorage.setItem(sessionKey, 'true');
+                return newCount;
+            });
+        }
+    }, []);
 
     // UI State
     const [activePage, setActivePage] = useState('home');
@@ -217,7 +247,9 @@ const App = () => {
                 }
                 if (settingsData) {
                     setContactSettings(settingsData);
-                    logger.debug('APP', '✅ Loaded contact settings');
+                    logger.debug('APP', '✅ Loaded contact settings', settingsData);
+                } else {
+                    logger.warn('APP', '⚠️ No contact settings found, using defaults');
                 }
                 
                 logger.info('APP', '🎉 All data loaded successfully');
@@ -413,12 +445,12 @@ const App = () => {
         api.updateBox(updatedBox);
     }
     
-    const handleDeleteBox = (id: string) => { 
+    const handleDeleteBox = (id: string | number) => { 
         if(window.confirm('هل أنت متأكد من حذف هذا البوكس؟')) {
-            const box = boxes.find(b => b.id === id);
+            const box = boxes.find(b => b.id === Number(id));
             logger.warn('ADMIN_BOXES', '🗑️ Box deleted', { boxId: id, boxName: box?.name });
-            setBoxes(prev => prev.filter(b => b.id !== id)); 
-            api.deleteBox(id);
+            setBoxes(prev => prev.filter(b => b.id !== Number(id))); 
+            api.deleteBox(String(id)); // Convert to string for API
         }
     }
     
@@ -505,6 +537,25 @@ const App = () => {
             finalTotal: finalTotal
         });
 
+        // Get chef_id from cart items (use first item's chef_id, or most common if multiple chefs)
+        const getChefIdFromCart = () => {
+            if (cart.length === 0) return null;
+            
+            // Count chef_ids in cart
+            const chefIdCounts: Record<string, number> = {};
+            cart.forEach(item => {
+                if (item.chef_id) {
+                    chefIdCounts[item.chef_id] = (chefIdCounts[item.chef_id] || 0) + item.quantity;
+                }
+            });
+            
+            // Return most common chef_id, or first one if all have same count
+            const sortedChefIds = Object.entries(chefIdCounts)
+                .sort((a, b) => b[1] - a[1]);
+            
+            return sortedChefIds.length > 0 ? sortedChefIds[0][0] : (cart[0]?.chef_id || null);
+        };
+
         const newOrder: Order = {
             id: Math.floor(Math.random() * 10000),
             customer: formData.name,
@@ -514,7 +565,8 @@ const App = () => {
             total: finalTotal,
             status: "pending",
             items: cart.map(i => i.name).join(", "),
-            itemsDetails: cart.map(i => ({...i}))
+            itemsDetails: cart.map(i => ({...i})),
+            chef_id: getChefIdFromCart() // Add chef_id from cart
         };
         
         logger.info('ORDER', '✅ Order created with ID', { orderId: newOrder.id });
@@ -607,7 +659,7 @@ const App = () => {
                          )}
                          {activePage === 'admin-orders' && <AdminOrders orders={orders} updateOrderStatus={updateOrderStatus} onDeleteOrder={handleDeleteOrder} onViewOrder={handleViewOrder} />}
                          {activePage === 'admin-order-details' && <AdminOrderDetails order={selectedOrder} onBack={() => setActivePage('admin-orders')} updateOrderStatus={updateOrderStatus} />}
-                         {activePage === 'admin-chefs' && <AdminChefs chefs={chefs} toggleChefStatus={toggleChefStatus} onAdd={handleAddChef} onEdit={handleEditChef} onDelete={handleDeleteChef} />}
+                         {activePage === 'admin-chefs' && <AdminChefs chefs={chefs} orders={orders} toggleChefStatus={toggleChefStatus} onAdd={handleAddChef} onEdit={handleEditChef} onDelete={handleDeleteChef} />}
                          {activePage === 'admin-meals' && <AdminMeals meals={menuItems} chefs={chefs} onAdd={handleAddMeal} onEdit={handleEditMeal} onDelete={handleDeleteMeal} />}
                          {activePage === 'admin-offers' && <AdminOffers offers={offers} chefs={chefs} onAdd={handleAddOffer} onEdit={handleEditOffer} onDelete={handleDeleteOffer} />}
                          {activePage === 'admin-boxes' && <AdminBoxes boxes={boxes} chefs={chefs} onAdd={handleAddBox} onEdit={handleEditBox} onDelete={handleDeleteBox} />}

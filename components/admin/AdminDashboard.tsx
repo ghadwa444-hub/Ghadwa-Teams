@@ -12,8 +12,8 @@ interface AdminDashboardProps {
 }
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({ orders, chefs, mealsCount, offersCount, visitorsCount }) => {
-    // Basic Calculations
-    const totalRevenue = orders.reduce((acc, curr) => acc + (Number(curr.total) || 0), 0);
+    // Basic Calculations - Use total_amount from database
+    const totalRevenue = orders.reduce((acc, curr) => acc + (Number(curr.total_amount) || Number(curr.total) || 0), 0);
     const activeOrders = orders.filter(o => o.status === 'pending' || o.status === 'preparing' || o.status === 'out_for_delivery').length;
     const completedOrders = orders.filter(o => o.status === 'delivered').length;
     

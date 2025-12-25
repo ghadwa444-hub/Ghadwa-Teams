@@ -50,14 +50,17 @@ export const AdminBestSellers: React.FC<AdminBestSellersProps> = ({ bestSellers,
         try {
             const itemData = {
                 name: formData.name,
+                title: formData.name, // Required field - sync with name
                 price: Number(formData.price),
                 category: formData.category,
                 chef_id: formData.chef_id || null,
                 description: formData.description || null,
                 image_url: formData.image_url || null,
                 is_available: true,
+                is_active: true, // Required field for database
                 is_featured: true,
-                is_offer: false
+                is_offer: false,
+                preparation_time: 30 // Default prep time
             };
 
             if (currentItem) {

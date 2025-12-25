@@ -50,6 +50,7 @@ export const AdminOffers: React.FC<AdminOffersProps> = ({ offers, chefs, onAdd, 
         try {
             const offerData = {
                 name: formData.name,
+                title: formData.name, // Required field - sync with name
                 price: Number(formData.price),
                 category: formData.category,
                 chef_id: formData.chef_id || null,

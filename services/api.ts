@@ -129,17 +129,33 @@ export const api = {
     getContactSettings: async (): Promise<ContactSettings> => {
         logger.debug('API_SETTINGS', '🔄 Fetching contact settings from Supabase...');
         try {
-            const settings = await supabaseDataService.getSettings();
-            const data: ContactSettings = {
-                phone: settings.find(s => s.key === 'contact_phone')?.value || '',
-                email: settings.find(s => s.key === 'contact_email')?.value || '',
-                address: settings.find(s => s.key === 'contact_address')?.value || '',
-                whatsapp: settings.find(s => s.key === 'contact_whatsapp')?.value || '',
-                facebook: settings.find(s => s.key === 'social_facebook')?.value || '',
-                instagram: settings.find(s => s.key === 'social_instagram')?.value || '',
+            const settings = await supabaseDataService.getContactSettings();
+            if (settings) {
+                const data: ContactSettings = {
+                    id: settings.id,
+                    phone: settings.phone || '',
+                    email: settings.email || '',
+                    address: settings.address || '',
+                    whatsapp: settings.whatsapp || '',
+                    facebook: settings.facebook || '',
+                    instagram: settings.instagram || '',
+                    linkedin: settings.linkedin || '',
+                    working_hours: settings.working_hours || '',
+                    updated_at: settings.updated_at
+                };
+                logger.info('API_SETTINGS', '✅ Fetched contact settings from Supabase');
+                return data;
+            }
+            // Fallback to empty settings
+            return {
+                phone: '',
+                email: '',
+                address: '',
+                whatsapp: '',
+                facebook: '',
+                instagram: '',
+                linkedin: '',
             };
-            logger.info('API_SETTINGS', '✅ Fetched contact settings from Supabase');
-            return data;
         } catch (error) {
             logger.error('API_SETTINGS', '❌ Error fetching settings, falling back', error);
             return {
@@ -149,6 +165,7 @@ export const api = {
                 whatsapp: '',
                 facebook: '',
                 instagram: '',
+                linkedin: '',
             };
         }
     },
@@ -164,13 +181,36 @@ export const api = {
             
             const discountAmount = (subtotal - order.total) || 0;
             
+            // Get chef_id from order items (use first item's chef_id, or most common if multiple chefs)
+            const getChefIdFromOrder = () => {
+                if (!order.itemsDetails || order.itemsDetails.length === 0) {
+                    return order.chef_id || null;
+                }
+                
+                // Count chef_ids in order items
+                const chefIdCounts: Record<string, number> = {};
+                order.itemsDetails.forEach((item: any) => {
+                    if (item.chef_id) {
+                        chefIdCounts[item.chef_id] = (chefIdCounts[item.chef_id] || 0) + (item.quantity || 1);
+                    }
+                });
+                
+                // Return most common chef_id, or first one if all have same count
+                const sortedChefIds = Object.entries(chefIdCounts)
+                    .sort((a, b) => b[1] - a[1]);
+                
+                return sortedChefIds.length > 0 ? sortedChefIds[0][0] : (order.itemsDetails[0]?.chef_id || order.chef_id || null);
+            };
+
             // Create order without customer_id (guest order)
             // If user is authenticated, we can add their ID later
             const createdOrder = await supabaseDataService.createOrder({
                 customer_id: null, // Guest orders have no customer_id
+                chef_id: getChefIdFromOrder(), // Add chef_id from cart items
                 customer_name: order.customer,
                 customer_phone: order.phone,
                 delivery_address: order.address,
+                delivery_phone: order.phone, // Also set delivery_phone
                 subtotal: subtotal,
                 delivery_fee: 0,
                 tax_amount: 0,
@@ -195,7 +235,7 @@ export const api = {
                     product_name: item.name,
                     quantity: item.quantity,
                     unit_price: item.price,
-                    subtotal: item.price * item.quantity  // Changed from total_price to subtotal (synced in DB)
+                    total_price: item.price * item.quantity  // total_price is the correct field name in order_items
                 }));
                 
                 const itemsCreated = await supabaseDataService.createOrderItems(orderItems);
@@ -449,14 +489,10 @@ export const api = {
     updateContactSettings: async (settings: ContactSettings): Promise<boolean> => {
         logger.info('API_SETTINGS', '✏️ Updating contact settings');
         try {
-            // Update each setting individually
-            await supabaseDataService.updateSetting('contact_phone', settings.phone || '');
-            await supabaseDataService.updateSetting('contact_email', settings.email || '');
-            await supabaseDataService.updateSetting('contact_address', settings.address || '');
-            await supabaseDataService.updateSetting('contact_whatsapp', settings.whatsapp || '');
-            await supabaseDataService.updateSetting('social_facebook', settings.facebook || '');
-            await supabaseDataService.updateSetting('social_instagram', settings.instagram || '');
-            logger.info('API_SETTINGS', '✅ Contact settings updated');
+            // AdminContactSettings component handles the update directly via Supabase
+            // This function is kept for backward compatibility but doesn't need to do anything
+            // since AdminContactSettings updates contact_settings table directly
+            logger.info('API_SETTINGS', '✅ Contact settings updated (handled by AdminContactSettings component)');
             return true;
         } catch (error) {
             logger.error('API_SETTINGS', '❌ Error updating settings', error);

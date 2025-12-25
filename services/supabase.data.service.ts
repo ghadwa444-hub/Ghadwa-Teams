@@ -457,6 +457,26 @@ export class SupabaseDataService {
     }
   }
 
+  async getContactSettings(): Promise<any | null> {
+    try {
+      logger.info('SUPABASE', '🔍 Fetching contact settings...');
+      
+      const { data, error } = await supabase
+        .from('contact_settings')
+        .select('*')
+        .limit(1)
+        .single();
+
+      if (error) throw error;
+
+      logger.info('SUPABASE', '✅ Fetched contact settings');
+      return data;
+    } catch (error) {
+      logger.error('SUPABASE', '❌ Failed to fetch contact settings', error);
+      return null;
+    }
+  }
+
   async getSetting(key: string): Promise<string | null> {
     try {
       const { data, error } = await supabase
@@ -512,6 +532,31 @@ export class SupabaseDataService {
     } catch (error) {
       logger.error('SUPABASE', '❌ Failed to fetch boxes', error);
       return [];
+    }
+  }
+
+  async deleteBox(id: string | number): Promise<boolean> {
+    try {
+      logger.info('SUPABASE', '🗑️ Deleting box...', { id });
+
+      // Boxes use BIGINT (number) IDs, not UUIDs
+      const boxId = Number(id);
+      if (isNaN(boxId)) {
+        throw new Error(`Invalid box id (expected number): ${id}`);
+      }
+
+      const { error } = await supabase
+        .from('boxes')
+        .delete()
+        .eq('id', boxId);
+
+      if (error) throw error;
+
+      logger.info('SUPABASE', '✅ Box deleted successfully');
+      return true;
+    } catch (error) {
+      logger.error('SUPABASE', '❌ Failed to delete box', error);
+      return false;
     }
   }
 }

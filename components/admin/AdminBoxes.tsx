@@ -9,7 +9,7 @@ interface AdminBoxesProps {
     chefs: Chef[];
     onAdd: (box: Box) => void;
     onEdit: (box: Box) => void;
-    onDelete: (id: string) => void;
+    onDelete: (id: string | number) => void;
 }
 
 export const AdminBoxes: React.FC<AdminBoxesProps> = ({ boxes, chefs, onAdd, onEdit, onDelete }) => {
@@ -46,13 +46,17 @@ export const AdminBoxes: React.FC<AdminBoxesProps> = ({ boxes, chefs, onAdd, onE
 
     const openEdit = (box: Box) => {
         setCurrentBox(box);
+        
+        // Find chef by name (boxes use chef name, not chef_id)
+        const chef = chefs.find(c => c.chef_name === box.chef);
+        
         setFormData({ 
             name: box.name,
             price: box.price,
-            serves: box.serves,
-            chef_id: box.chef_id,
-            itemsString: box.items.join(', '),
-            image_url: box.image_url
+            serves: box.serves || '',
+            chef_id: chef?.id || '',
+            itemsString: box.items?.join(', ') || '',
+            image_url: box.image_url || box.img || ''
         });
         setFormErrors({});
         setIsModalOpen(true);
@@ -73,14 +77,38 @@ export const AdminBoxes: React.FC<AdminBoxesProps> = ({ boxes, chefs, onAdd, onE
 
         try {
             const items = formData.itemsString.split(',').map((item: string) => item.trim());
-            const boxData = {
+            
+            // Get chef name from chef_id
+            const selectedChef = chefs.find(c => c.id === formData.chef_id);
+            const chefName = selectedChef?.chef_name || '';
+            
+            const boxData: any = {
                 name: formData.name,
                 price: Number(formData.price),
                 serves: formData.serves,
-                chef_id: formData.chef_id,
+                chef: chefName, // Use 'chef' (TEXT) not 'chef_id'
                 items: items,
-                image_url: formData.image_url || null
+                image_url: formData.image_url || null,
+                img: formData.image_url || null, // Also set legacy 'img' field
+                items_count: items.length
             };
+            
+            // Generate ID for new boxes (BIGINT, not UUID)
+            if (!currentBox) {
+                // Get max ID and add 1, or use timestamp if no boxes exist
+                const { data: maxBoxes } = await supabase
+                    .from('boxes')
+                    .select('id')
+                    .order('id', { ascending: false })
+                    .limit(1);
+                
+                if (maxBoxes && maxBoxes.length > 0 && maxBoxes[0]?.id) {
+                    boxData.id = Number(maxBoxes[0].id) + 1;
+                } else {
+                    // Use timestamp as fallback if no boxes exist
+                    boxData.id = Math.floor(Date.now() / 1000);
+                }
+            }
 
             if (currentBox) {
                 // Update existing box in database
@@ -123,13 +151,13 @@ export const AdminBoxes: React.FC<AdminBoxesProps> = ({ boxes, chefs, onAdd, onE
         }
     };
 
-    const handleDelete = async (id: string) => {
+    const handleDelete = async (id: string | number) => {
         try {
             setIsLoading(true);
             const { error } = await supabase
                 .from('boxes')
                 .delete()
-                .eq('id', id);
+                .eq('id', Number(id)); // Convert to number (BIGINT)
 
             if (error) throw error;
             onDelete(id);

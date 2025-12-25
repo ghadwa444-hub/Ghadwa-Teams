@@ -9,13 +9,97 @@ interface AdminContactSettingsProps {
 }
 
 export const AdminContactSettings: React.FC<AdminContactSettingsProps> = ({ settings, onUpdate }) => {
-    const [formData, setFormData] = useState<ContactSettings>(settings);
+    // Default values for contact settings
+    const defaultSettings: ContactSettings = {
+        phone: '201109318581',
+        whatsapp: '201109318581',
+        email: 'ghadwa444@gmail.com',
+        address: 'طنطا، مصر',
+        facebook: '',
+        instagram: '',
+        linkedin: '',
+        working_hours: 'السبت - الخميس: 10 ص - 11 م\nالجمعة: مغلق'
+    };
+
+    // Merge settings with defaults (defaults only used if setting is empty)
+    const mergedSettings: ContactSettings = {
+        ...defaultSettings,
+        ...settings,
+        // Only override defaults if settings have actual values
+        phone: settings?.phone || defaultSettings.phone,
+        whatsapp: settings?.whatsapp || defaultSettings.whatsapp,
+        email: settings?.email || defaultSettings.email,
+        address: settings?.address || defaultSettings.address,
+        working_hours: settings?.working_hours || defaultSettings.working_hours,
+        facebook: settings?.facebook || defaultSettings.facebook,
+        instagram: settings?.instagram || defaultSettings.instagram,
+        linkedin: settings?.linkedin || defaultSettings.linkedin,
+        id: settings?.id
+    };
+
+    const [formData, setFormData] = useState<ContactSettings>(mergedSettings);
     const [isLoading, setIsLoading] = useState(false);
     const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
+    // Load settings when component mounts or settings prop changes
     useEffect(() => {
-        setFormData(settings);
+        const merged = {
+            ...defaultSettings,
+            ...settings,
+            phone: settings?.phone || defaultSettings.phone,
+            whatsapp: settings?.whatsapp || defaultSettings.whatsapp,
+            email: settings?.email || defaultSettings.email,
+            address: settings?.address || defaultSettings.address,
+            working_hours: settings?.working_hours || defaultSettings.working_hours,
+            facebook: settings?.facebook || defaultSettings.facebook,
+            instagram: settings?.instagram || defaultSettings.instagram,
+            linkedin: settings?.linkedin || defaultSettings.linkedin,
+            id: settings?.id
+        };
+        setFormData(merged);
     }, [settings]);
+    
+    // Also try to load settings directly from database when component mounts
+    useEffect(() => {
+        const loadSettings = async () => {
+            try {
+                const { data, error } = await supabase
+                    .from('contact_settings')
+                    .select('*')
+                    .limit(1)
+                    .single();
+                
+                if (!error && data) {
+                    const merged = {
+                        ...defaultSettings,
+                        ...data,
+                        phone: data.phone || defaultSettings.phone,
+                        whatsapp: data.whatsapp || defaultSettings.whatsapp,
+                        email: data.email || defaultSettings.email,
+                        address: data.address || defaultSettings.address,
+                        working_hours: data.working_hours || defaultSettings.working_hours,
+                        facebook: data.facebook || defaultSettings.facebook,
+                        instagram: data.instagram || defaultSettings.instagram,
+                        linkedin: data.linkedin || defaultSettings.linkedin
+                    };
+                    setFormData(merged as ContactSettings);
+                    onUpdate(merged as ContactSettings);
+                } else {
+                    // If no settings found, use defaults
+                    setFormData(defaultSettings);
+                }
+            } catch (err) {
+                console.error('Failed to load settings:', err);
+                // On error, use defaults
+                setFormData(defaultSettings);
+            }
+        };
+        
+        // Only load if we don't have settings with id
+        if (!settings?.id) {
+            loadSettings();
+        }
+    }, []); // Run once on mount
 
     const showNotification = (type: 'success' | 'error', message: string) => {
         setNotification({ type, message });
@@ -39,6 +123,7 @@ export const AdminContactSettings: React.FC<AdminContactSettingsProps> = ({ sett
                 whatsapp: formData.whatsapp || null,
                 instagram: formData.instagram || null,
                 facebook: formData.facebook || null,
+                linkedin: formData.linkedin || null,
                 working_hours: formData.working_hours || null
             };
 
@@ -171,6 +256,18 @@ export const AdminContactSettings: React.FC<AdminContactSettingsProps> = ({ sett
                                     onChange={handleChange}
                                     disabled={isLoading}
                                     placeholder="رابط حسابنا على إنستجرام"
+                                    className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:border-[#8B2525] focus:ring-0 outline-none transition-all disabled:opacity-50"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="block text-sm font-bold text-gray-700">LinkedIn</label>
+                                <input
+                                    type="text"
+                                    name="linkedin"
+                                    value={formData.linkedin || ''}
+                                    onChange={handleChange}
+                                    disabled={isLoading}
+                                    placeholder="رابط صفحة LinkedIn"
                                     className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:border-[#8B2525] focus:ring-0 outline-none transition-all disabled:opacity-50"
                                 />
                             </div>

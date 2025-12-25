@@ -107,6 +107,7 @@ export const AdminMeals: React.FC<AdminMealsProps> = ({ meals, chefs, onAdd, onE
 
             const mealData = {
                 name: formData.name,
+                title: formData.name, // Required field - sync with name
                 description: formData.description || null,
                 price: Number(formData.price),
                 category: formData.category,
