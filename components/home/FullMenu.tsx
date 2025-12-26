@@ -21,9 +21,18 @@ export const FullMenu: React.FC<FullMenuProps> = ({ menuItems, cart, updateQuant
         return chef?.chef_name || 'مطبخ';
     };
 
-    const filteredItems = activeCategory === "الكل" 
+    // Helper to check if chef is active
+    const isChefActive = (chefId?: string): boolean => {
+        if (!chefId || !chefs.length) return true; // If no chef_id, show item
+        const chef = chefs.find(c => c.id === chefId);
+        return chef?.is_active !== false; // Default to true if chef not found
+    };
+
+    // Filter items by category and exclude items from inactive chefs
+    const filteredItems = (activeCategory === "الكل" 
         ? menuItems 
-        : menuItems.filter(item => item.category === activeCategory);
+        : menuItems.filter(item => item.category === activeCategory)
+    ).filter(item => isChefActive(item.chef_id)); // Only show items from active chefs
 
     return (
         <section id="menu" className="py-12 sm:py-16 md:py-20 lg:py-24 bg-white">
@@ -61,10 +70,25 @@ export const FullMenu: React.FC<FullMenuProps> = ({ menuItems, cart, updateQuant
                 ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     {filteredItems.map(item => {
-                         return (
-                            <div key={item.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all group overflow-hidden">
+                        const chefIsActive = isChefActive(item.chef_id);
+                        const chef = chefs.find(c => c.id === item.chef_id);
+                        
+                        return (
+                            <div key={item.id} className={`bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all group overflow-hidden ${!chefIsActive ? 'opacity-60 grayscale' : ''}`}>
                                 <div className="h-48 relative overflow-hidden">
-                                    <img src={item.image_url || 'https://via.placeholder.com/300x300?text=Menu'} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                    <img 
+                                        src={item.image_url || 'https://via.placeholder.com/300x300?text=Menu'} 
+                                        alt={item.name} 
+                                        className={`w-full h-full object-cover transition-transform duration-500 ${chefIsActive ? 'group-hover:scale-105' : ''}`}
+                                    />
+                                    {!chefIsActive && (
+                                        <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                                            <div className="bg-white/95 backdrop-blur-sm px-4 py-2 rounded-full font-bold text-gray-900 text-sm shadow-lg">
+                                                <i className="fa-solid fa-lock mr-1"></i>
+                                                المطبخ مغلق
+                                            </div>
+                                        </div>
+                                    )}
                                     <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-lg text-xs font-bold flex items-center gap-1 shadow-sm">
                                         <i className="fa-solid fa-star text-yellow-400"></i>
                                         {item.rating || 5.0}
@@ -81,7 +105,13 @@ export const FullMenu: React.FC<FullMenuProps> = ({ menuItems, cart, updateQuant
                                         <span className="mx-1">•</span>
                                         <span className="text-gray-400">{item.chef || getChefName(item.chef_id) || "مطبخ"}</span>
                                     </p>
-                                    <AddToCartButton item={item} cart={cart} updateQuantity={updateQuantity} className="w-full py-2.5" disabled={!item.is_available} />
+                                    <AddToCartButton 
+                                        item={item} 
+                                        cart={cart} 
+                                        updateQuantity={updateQuantity} 
+                                        className="w-full py-2.5" 
+                                        disabled={!item.is_available || !chefIsActive} 
+                                    />
                                 </div>
                             </div>
                          );

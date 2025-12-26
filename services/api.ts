@@ -323,6 +323,9 @@ export const api = {
                 specialty: chef.specialty || null,
                 description: chef.description || null,
                 image_url: chef.image_url || null,
+                cover_image_url: chef.cover_image_url || null,
+                working_hours: chef.working_hours || null,
+                delivery_time: chef.delivery_time || null,
                 rating: chef.rating || 5.0,
                 is_active: chef.is_active ?? true
             });
@@ -334,13 +337,23 @@ export const api = {
         }
     },
     updateChef: async (chef: Chef): Promise<Chef | null> => {
-        logger.info('API_CHEFS', '✏️ Updating chef in Supabase', { chefId: chef.id, chefName: chef.chef_name, is_active: chef.is_active });
+        logger.info('API_CHEFS', '✏️ Updating chef in Supabase', { 
+            chefId: chef.id, 
+            chefName: chef.chef_name, 
+            is_active: chef.is_active,
+            has_cover_image: !!chef.cover_image_url,
+            working_hours: chef.working_hours,
+            delivery_time: chef.delivery_time
+        });
         try {
             const result = await supabaseDataService.updateChef(chef.id, {
                 chef_name: chef.chef_name,
                 specialty: chef.specialty || null,
                 description: chef.description || null,
                 image_url: chef.image_url || null,
+                cover_image_url: chef.cover_image_url || null,
+                working_hours: chef.working_hours || null,
+                delivery_time: chef.delivery_time || null,
                 rating: chef.rating,
                 is_active: chef.is_active
             });
@@ -350,7 +363,13 @@ export const api = {
                 return null;
             }
             
-            logger.info('API_CHEFS', '✅ Chef updated successfully in Supabase', { chefName: chef.chef_name, is_active: result.is_active });
+            logger.info('API_CHEFS', '✅ Chef updated successfully in Supabase', { 
+                chefName: chef.chef_name, 
+                is_active: result.is_active,
+                cover_image_url: result.cover_image_url,
+                working_hours: result.working_hours,
+                delivery_time: result.delivery_time
+            });
             return result;
         } catch (error) {
             logger.error('API_CHEFS', '❌ Error updating chef in Supabase', error);
@@ -401,10 +420,18 @@ export const api = {
         }
     },
     updateMenuItem: async (item: Product): Promise<Product | null> => {
-        logger.info('API_MENU', '✏️ Updating menu item in Supabase', { name: item.name });
+        // Clean chef_id: empty string becomes null
+        const chefId = item.chef_id && item.chef_id.trim() !== '' ? item.chef_id.trim() : null;
+        
+        logger.info('API_MENU', '✏️ Updating menu item in Supabase', { 
+            name: item.name, 
+            itemId: item.id,
+            chef_id: chefId 
+        });
+        
         try {
-            const updatedProduct = await supabaseDataService.updateProduct(item.id, {
-                chef_id: item.chef_id || null,
+            const updatePayload = {
+                chef_id: chefId,
                 name: item.name,
                 description: item.description || null,
                 price: item.price.toString(),
@@ -415,14 +442,21 @@ export const api = {
                 is_offer: item.is_offer ?? false,
                 offer_price: item.offer_price?.toString() || null,
                 prep_time: item.prep_time || null
-            });
+            };
+            
+            logger.debug('API_MENU', '📤 Update payload:', updatePayload);
+            
+            const updatedProduct = await supabaseDataService.updateProduct(item.id, updatePayload);
             
             if (!updatedProduct) {
                 logger.warn('API_MENU', '⚠️ Update returned null', { itemId: item.id });
                 return null;
             }
             
-            logger.info('API_MENU', '✅ Menu item updated in Supabase', { name: item.name });
+            logger.info('API_MENU', '✅ Menu item updated in Supabase', { 
+                name: item.name,
+                chef_id: updatedProduct.chef_id 
+            });
             return updatedProduct;
         } catch (error) {
             logger.error('API_MENU', '❌ Error updating menu item', error);

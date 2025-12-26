@@ -18,13 +18,23 @@ interface AdminChefsProps {
 export const AdminChefs: React.FC<AdminChefsProps> = ({ chefs, orders, toggleChefStatus, onAdd, onEdit, onDelete }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [currentChef, setCurrentChef] = useState<Chef | null>(null);
-    const [formData, setFormData] = useState<any>({ name: '', specialty: '', bio: '', img: '' });
+    const [formData, setFormData] = useState<any>({ 
+        name: '', 
+        specialty: '', 
+        bio: '', 
+        img: '', 
+        cover_img: '',
+        working_hours: 'يوميًا 10ص - 10م',
+        delivery_time: '30-45 دقيقة'
+    });
     const [formErrors, setFormErrors] = useState<Record<string, string>>({});
     const [isLoading, setIsLoading] = useState(false);
     const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
     const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
     const [profileImagePreview, setProfileImagePreview] = useState<string>('');
+    const [coverImagePreview, setCoverImagePreview] = useState<string>('');
     const profileImageRef = useRef<HTMLInputElement>(null);
+    const coverImageRef = useRef<HTMLInputElement>(null);
     const [togglingChefId, setTogglingChefId] = useState<string | null>(null);
 
     const showNotification = (type: 'success' | 'error', message: string) => {
@@ -33,10 +43,20 @@ export const AdminChefs: React.FC<AdminChefsProps> = ({ chefs, orders, toggleChe
     };
 
     const clearForm = () => {
-        setFormData({ name: '', specialty: '', bio: '', img: '' });
+        setFormData({ 
+            name: '', 
+            specialty: '', 
+            bio: '', 
+            img: '', 
+            cover_img: '',
+            working_hours: 'يوميًا 10ص - 10م',
+            delivery_time: '30-45 دقيقة'
+        });
         setFormErrors({});
         setProfileImagePreview('');
+        setCoverImagePreview('');
         if (profileImageRef.current) profileImageRef.current.value = '';
+        if (coverImageRef.current) coverImageRef.current.value = '';
     };
 
     const openAdd = () => {
@@ -52,8 +72,12 @@ export const AdminChefs: React.FC<AdminChefsProps> = ({ chefs, orders, toggleChe
             specialty: chef.specialty || '',
             bio: chef.description || '',
             img: chef.image_url || '',
+            cover_img: chef.cover_image_url || '',
+            working_hours: chef.working_hours || 'يوميًا 10ص - 10م',
+            delivery_time: chef.delivery_time || '30-45 دقيقة',
         });
         setProfileImagePreview(chef.image_url || '');
+        setCoverImagePreview(chef.cover_image_url || '');
         setFormErrors({});
         setIsModalOpen(true);
     };
@@ -66,6 +90,18 @@ export const AdminChefs: React.FC<AdminChefsProps> = ({ chefs, orders, toggleChe
         const reader = new FileReader();
         reader.onloadend = () => {
             setProfileImagePreview(reader.result as string);
+        };
+        reader.readAsDataURL(file);
+    };
+
+    const handleCoverImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        // Show preview immediately
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            setCoverImagePreview(reader.result as string);
         };
         reader.readAsDataURL(file);
     };
@@ -85,6 +121,7 @@ export const AdminChefs: React.FC<AdminChefsProps> = ({ chefs, orders, toggleChe
 
         try {
             let profileImageUrl = formData.img || '';
+            let coverImageUrl = formData.cover_img || '';
 
             // Upload profile image if changed
             if (profileImageRef.current?.files?.[0]) {
@@ -98,12 +135,27 @@ export const AdminChefs: React.FC<AdminChefsProps> = ({ chefs, orders, toggleChe
                 profileImageUrl = uploadResult.url!;
             }
 
+            // Upload cover image if changed
+            if (coverImageRef.current?.files?.[0]) {
+                const uploadResult = await imageUploadService.uploadChefImage(
+                    coverImageRef.current.files[0],
+                    'cover'
+                );
+                if (!uploadResult.success) {
+                    throw new Error(uploadResult.error || 'Failed to upload cover image');
+                }
+                coverImageUrl = uploadResult.url!;
+            }
+
             // Map form data to actual database schema
             const chefData = {
                 chef_name: formData.name.trim(),
                 specialty: formData.specialty?.trim() || null,
                 description: formData.bio?.trim() || null,
                 image_url: profileImageUrl || null,
+                cover_image_url: coverImageUrl || null,
+                working_hours: formData.working_hours?.trim() || null,
+                delivery_time: formData.delivery_time?.trim() || null,
                 is_active: true,
                 rating: 5.0,
             };
@@ -116,6 +168,9 @@ export const AdminChefs: React.FC<AdminChefsProps> = ({ chefs, orders, toggleChe
                     specialty: chefData.specialty || '',
                     description: chefData.description || '',
                     image_url: chefData.image_url || '',
+                    cover_image_url: chefData.cover_image_url || '',
+                    working_hours: chefData.working_hours || '',
+                    delivery_time: chefData.delivery_time || '',
                     is_active: chefData.is_active,
                     rating: chefData.rating,
                 };
@@ -136,6 +191,9 @@ export const AdminChefs: React.FC<AdminChefsProps> = ({ chefs, orders, toggleChe
                     specialty: chefData.specialty || '',
                     description: chefData.description || '',
                     image_url: chefData.image_url || '',
+                    cover_image_url: chefData.cover_image_url || '',
+                    working_hours: chefData.working_hours || '',
+                    delivery_time: chefData.delivery_time || '',
                     is_active: chefData.is_active,
                     rating: chefData.rating,
                 };
@@ -236,9 +294,9 @@ export const AdminChefs: React.FC<AdminChefsProps> = ({ chefs, orders, toggleChe
                     
                     return (
                         <div key={chef.id} className={`bg-white rounded-[2rem] border transition-all duration-300 ${chef.is_active ? 'border-green-200 shadow-lg shadow-green-100/50' : 'border-gray-200 opacity-90' } overflow-hidden relative group hover:shadow-xl`}>
-                             {/* Profile Image Area */}
+                             {/* Cover Image Area */}
                              <div className="h-32 w-full relative bg-gray-100">
-                                <img src={chef.image_url || '/placeholder.jpg'} alt={`${chef.chef_name} profile`} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                                <img src={chef.cover_image_url || chef.image_url || '/placeholder.jpg'} alt={`${chef.chef_name} cover`} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
                                 <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
                                 
                                 {/* Status Pill */}
@@ -420,6 +478,30 @@ export const AdminChefs: React.FC<AdminChefsProps> = ({ chefs, orders, toggleChe
                     {formErrors.img && <p className="text-red-500 text-sm">{formErrors.img}</p>}
                 </div>
 
+                {/* Cover Image Upload */}
+                <div className="space-y-2">
+                    <label htmlFor="cover-img" className="block text-sm font-bold text-gray-700">صورة الغلاف (اختياري)</label>
+                    <div className="flex gap-4 items-center">
+                        <input
+                            id="cover-img"
+                            ref={coverImageRef}
+                            type="file"
+                            accept="image/*"
+                            onChange={handleCoverImageChange}
+                            disabled={isLoading}
+                            title="Select cover image"
+                            className="flex-1 p-3 bg-gray-50 rounded-xl border border-gray-200 text-gray-900 text-sm"
+                        />
+                        {(coverImagePreview || formData.cover_img) && (
+                            <img
+                                src={coverImagePreview || formData.cover_img}
+                                alt="Cover preview"
+                                className="w-20 h-12 rounded-lg object-cover border-2 border-gray-300"
+                            />
+                        )}
+                    </div>
+                </div>
+
                 {/* Name */}
                 <div className="space-y-1">
                     <input
@@ -450,13 +532,37 @@ export const AdminChefs: React.FC<AdminChefsProps> = ({ chefs, orders, toggleChe
                 {/* Bio */}
                 <div className="space-y-1">
                     <textarea
-                        placeholder="نبذة عن الشيف"
+                        placeholder="نبذة عن الشيف (اختياري)"
                         className={`w-full p-3 bg-gray-50 rounded-xl border ${formErrors.bio ? 'border-red-500' : 'border-gray-200'} text-gray-900 h-24 resize-none`}
                         value={formData.bio || ''}
                         onChange={e => setFormData({...formData, bio: e.target.value})}
                         disabled={isLoading}
                     />
                     {formErrors.bio && <p className="text-red-500 text-sm">{formErrors.bio}</p>}
+                </div>
+
+                {/* Working Hours */}
+                <div className="space-y-1">
+                    <input
+                        type="text"
+                        placeholder="ساعات العمل (مثلاً: يوميًا 10ص - 10م)"
+                        className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 text-gray-900"
+                        value={formData.working_hours || ''}
+                        onChange={e => setFormData({...formData, working_hours: e.target.value})}
+                        disabled={isLoading}
+                    />
+                </div>
+
+                {/* Delivery Time */}
+                <div className="space-y-1">
+                    <input
+                        type="text"
+                        placeholder="مدة التوصيل (مثلاً: 30-45 دقيقة)"
+                        className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 text-gray-900"
+                        value={formData.delivery_time || ''}
+                        onChange={e => setFormData({...formData, delivery_time: e.target.value})}
+                        disabled={isLoading}
+                    />
                 </div>
 
                 {/* Submit Button */}

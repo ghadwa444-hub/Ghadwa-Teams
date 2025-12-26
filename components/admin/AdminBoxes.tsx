@@ -112,18 +112,25 @@ export const AdminBoxes: React.FC<AdminBoxesProps> = ({ boxes, chefs, onAdd, onE
 
             if (currentBox) {
                 // Update existing box in database
-                const { data, error } = await supabase
+                const { error: updateError } = await supabase
                     .from('boxes')
                     .update(boxData)
-                    .eq('id', currentBox.id)
-                    .select()
-                    .single();
+                    .eq('id', currentBox.id);
 
-                if (error) throw error;
-                if (data) {
-                    const updatedBox: Box = { ...data };
-                    onEdit(updatedBox);
-                }
+                if (updateError) throw updateError;
+
+                // Fetch updated box
+                const { data, error: selectError } = await supabase
+                    .from('boxes')
+                    .select('*')
+                    .eq('id', currentBox.id)
+                    .maybeSingle();
+
+                if (selectError) throw selectError;
+                if (!data) throw new Error('Failed to fetch updated box');
+
+                const updatedBox: Box = { ...data };
+                onEdit(updatedBox);
                 showNotification('success', 'تم تحديث البوكس بنجاح! ✅');
             } else {
                 // Add new box to database
@@ -134,10 +141,10 @@ export const AdminBoxes: React.FC<AdminBoxesProps> = ({ boxes, chefs, onAdd, onE
                     .single();
 
                 if (error) throw error;
-                if (data) {
-                    const newBox: Box = { ...data };
-                    onAdd(newBox);
-                }
+                if (!data) throw new Error('Failed to create box - no data returned');
+
+                const newBox: Box = { ...data };
+                onAdd(newBox);
                 showNotification('success', 'تم إضافة البوكس بنجاح! ✅');
             }
 
@@ -295,17 +302,31 @@ export const AdminBoxes: React.FC<AdminBoxesProps> = ({ boxes, chefs, onAdd, onE
                 <div>
                     <select 
                         className={`w-full p-3 bg-gray-50 rounded-xl border ${formErrors.chef_id ? 'border-red-500' : 'border-gray-200'} text-gray-900`}
-                        value={formData.chef_id} 
-                        onChange={e => setFormData({...formData, chef_id: e.target.value})}
+                        value={formData.chef_id || ''} 
+                        onChange={e => {
+                            console.log('Chef selected:', e.target.value);
+                            setFormData({...formData, chef_id: e.target.value});
+                            // Clear error when chef is selected
+                            if (formErrors.chef_id) {
+                                setFormErrors({...formErrors, chef_id: ''});
+                            }
+                        }}
                         disabled={isLoading}
                         required
                     >
-                        <option value="" disabled>اختر الشيف</option>
-                        {chefs.map(chef => (
-                            <option key={chef.id} value={chef.id}>{chef.chef_name}</option>
-                        ))}
+                        <option value="">اختر الشيف</option>
+                        {chefs.length === 0 ? (
+                            <option disabled>لا يوجد شيفات متاحة</option>
+                        ) : (
+                            chefs.map(chef => (
+                                <option key={chef.id} value={chef.id}>{chef.chef_name}</option>
+                            ))
+                        )}
                     </select>
-                    {formErrors.chef_id && <p className="text-sm text-red-500">{formErrors.chef_id}</p>}
+                    {formErrors.chef_id && <p className="text-sm text-red-500 mt-1">{formErrors.chef_id}</p>}
+                    {chefs.length === 0 && (
+                        <p className="text-xs text-amber-600 mt-1">⚠️ يجب إضافة شيفات أولاً من قائمة الشيفات</p>
+                    )}
                 </div>
 
                 <div>

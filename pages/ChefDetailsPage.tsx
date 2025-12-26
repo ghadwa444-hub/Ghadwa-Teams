@@ -22,9 +22,9 @@ export const ChefDetailsPage: React.FC<ChefDetailsPageProps> = ({ chef, onBack, 
 
     return (
         <div className="min-h-screen bg-gray-50 pt-24 pb-20 animate-fade-in">
-             {/* Header Image */}
+             {/* Header Image (Cover) */}
              <div className="h-64 md:h-80 w-full relative">
-                 <img src={chef.image_url || 'https://images.unsplash.com/photo-1556910103-1c02745aae4d?w=800&q=80'} alt={chef.chef_name} className="w-full h-full object-cover" />
+                 <img src={chef.cover_image_url || chef.image_url || 'https://images.unsplash.com/photo-1556910103-1c02745aae4d?w=800&q=80'} alt={`${chef.chef_name} cover`} className="w-full h-full object-cover" />
                  <div className="absolute inset-0 bg-gradient-to-t from-gray-900/80 to-transparent"></div>
                  <button onClick={onBack} className="absolute top-8 right-8 bg-white/20 backdrop-blur-md text-white w-10 h-10 rounded-full flex items-center justify-center hover:bg-white/30 transition z-10 border border-white/30">
                      <i className="fa-solid fa-arrow-right"></i>

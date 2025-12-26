@@ -48,18 +48,28 @@ export const AdminMeals: React.FC<AdminMealsProps> = ({ meals, chefs, onAdd, onE
 
     const openEdit = (meal: MenuItem) => {
         setCurrentMeal(meal);
+        // Ensure chef_id is properly set (null or empty string becomes empty string for select)
+        // Convert to string and handle null/undefined
+        const chefId = meal.chef_id ? String(meal.chef_id).trim() : '';
         setFormData({
             name: meal.name,
             description: meal.description || '',
             price: meal.price,
             category: meal.category,
-            chef_id: meal.chef_id,
+            chef_id: chefId, // Use cleaned chef_id as string
             image_url: meal.image_url || '',
             prep_time: meal.prep_time ? String(meal.prep_time) : '30'
         });
         setImagePreview(meal.image_url || '');
         setFormErrors({});
         setIsModalOpen(true);
+        console.log('📝 Editing meal:', { 
+            name: meal.name, 
+            chef_id: chefId, 
+            original_chef_id: meal.chef_id,
+            chef_id_type: typeof meal.chef_id,
+            chefs_available: chefs.length
+        });
     };
 
     const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -112,13 +122,16 @@ export const AdminMeals: React.FC<AdminMealsProps> = ({ meals, chefs, onAdd, onE
                 imageUrl = uploadResult.url!;
             }
 
+            // Ensure chef_id is properly set (empty string becomes null)
+            const chefId = formData.chef_id && formData.chef_id.trim() !== '' ? formData.chef_id.trim() : null;
+            
             const mealData = {
                 name: formData.name,
                 title: formData.name, // Required field - sync with name
                 description: formData.description || null,
                 price: Number(formData.price),
                 category: formData.category,
-                chef_id: formData.chef_id || null,
+                chef_id: chefId, // Use cleaned chef_id
                 image_url: imageUrl || null,
                 prep_time: Number(formData.prep_time) || 30, // Preparation time in minutes
                 is_available: true,
@@ -128,6 +141,7 @@ export const AdminMeals: React.FC<AdminMealsProps> = ({ meals, chefs, onAdd, onE
             
             console.log('📋 Submitting meal data:', mealData);
             console.log('👨‍🍳 Available chefs:', chefs.length);
+            console.log('👨‍🍳 Selected chef_id:', chefId);
 
             if (currentMeal) {
                 // Update existing meal via API
@@ -136,10 +150,13 @@ export const AdminMeals: React.FC<AdminMealsProps> = ({ meals, chefs, onAdd, onE
                     ...mealData
                 };
                 
+                console.log('🔄 Updating meal with data:', updatedMeal);
                 const result = await api.updateMenuItem(updatedMeal);
                 if (!result) {
-                    throw new Error('Failed to update meal');
+                    throw new Error('Failed to update meal - no data returned from server');
                 }
+                
+                console.log('✅ Meal updated successfully:', result);
                 
                 // Use the returned product data from database
                 onEdit(result);
@@ -358,13 +375,19 @@ export const AdminMeals: React.FC<AdminMealsProps> = ({ meals, chefs, onAdd, onE
                     </div>
 
                     <div className="space-y-1">
+                        <label className="block text-sm font-bold text-gray-700 mb-1">الشيف</label>
                         <select
                             title="Select chef"
-                            className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 text-gray-900"
+                            className={`w-full p-3 bg-gray-50 rounded-xl border ${formErrors.chef_id ? 'border-red-500' : 'border-gray-200'} text-gray-900`}
                             value={formData.chef_id || ''}
                             onChange={e => {
-                                console.log('Chef selected:', e.target.value);
-                                setFormData({...formData, chef_id: e.target.value});
+                                const selectedChefId = e.target.value;
+                                console.log('Chef selected:', selectedChefId);
+                                setFormData({...formData, chef_id: selectedChefId});
+                                // Clear chef_id error when chef is selected
+                                if (formErrors.chef_id) {
+                                    setFormErrors({...formErrors, chef_id: ''});
+                                }
                             }}
                             disabled={isLoading}
                         >
@@ -377,8 +400,9 @@ export const AdminMeals: React.FC<AdminMealsProps> = ({ meals, chefs, onAdd, onE
                                 ))
                             )}
                         </select>
-                        {chefs.length === 0 && (
-                            <p className="text-xs text-amber-600">⚠️ يجب إضافة شيفات أولاً من قائمة الشيفات</p>
+                        {formErrors.chef_id && <p className="text-xs text-red-500 mt-1">{formErrors.chef_id}</p>}
+                        {chefs.length === 0 && !formErrors.chef_id && (
+                            <p className="text-xs text-amber-600 mt-1">⚠️ يجب إضافة شيفات أولاً من قائمة الشيفات</p>
                         )}
                     </div>
                 </div>

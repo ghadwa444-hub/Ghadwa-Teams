@@ -39,6 +39,9 @@ export interface Chef {
   specialty?: string;
   description?: string;
   image_url?: string;
+  cover_image_url?: string; // Cover/banner image for chef profile
+  working_hours?: string;   // e.g., "يوميًا 10ص - 10م"
+  delivery_time?: string;   // e.g., "30-45 دقيقة"
   rating: number;
   is_active: boolean;
   created_at?: string;
@@ -52,6 +55,7 @@ export interface Chef {
 export interface Product {
   id: string;           // UUID
   chef_id?: string;     // UUID
+  original_price?: number; // Original price before discount (for offers)
   name: string;
   description?: string;
   price: number;

@@ -26,8 +26,8 @@ export const ChefCard: React.FC<ChefCardProps> = ({ chef, onClick, ordersCount =
       {/* Cover Image - Responsive Heights */}
       <div className="h-40 sm:h-44 md:h-48 lg:h-56 xl:h-64 overflow-hidden relative">
         <img
-          src={chef.image_url || 'https://via.placeholder.com/400x300?text=Chef'}
-          alt={chef.chef_name}
+          src={chef.cover_image_url || chef.image_url || 'https://via.placeholder.com/400x300?text=Chef'}
+          alt={`${chef.chef_name} cover`}
           className={`w-full h-full object-cover transition-transform duration-700 ${
             chef.is_active ? 'group-hover:scale-110' : 'grayscale opacity-60'
           }`}

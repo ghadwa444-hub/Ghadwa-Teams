@@ -15,7 +15,15 @@ interface AdminOffersProps {
 export const AdminOffers: React.FC<AdminOffersProps> = ({ offers, chefs, onAdd, onEdit, onDelete }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [currentOffer, setCurrentOffer] = useState<MenuItem | null>(null);
-    const [formData, setFormData] = useState<any>({ name: '', price: '', category: '', chef_id: '', image_url: '', description: '' });
+    const [formData, setFormData] = useState<any>({ 
+        name: '', 
+        price: '', 
+        original_price: '', 
+        category: '', 
+        chef_id: '', 
+        image_url: '', 
+        description: '' 
+    });
     const [isLoading, setIsLoading] = useState(false);
     const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
@@ -26,7 +34,15 @@ export const AdminOffers: React.FC<AdminOffersProps> = ({ offers, chefs, onAdd, 
 
     const openAdd = () => {
         setCurrentOffer(null);
-        setFormData({ name: '', price: '', category: '', chef_id: '', image_url: '', description: '' });
+        setFormData({ 
+            name: '', 
+            price: '', 
+            original_price: '', 
+            category: '', 
+            chef_id: '', 
+            image_url: '', 
+            description: '' 
+        });
         setIsModalOpen(true);
     };
 
@@ -35,6 +51,7 @@ export const AdminOffers: React.FC<AdminOffersProps> = ({ offers, chefs, onAdd, 
         setFormData({
             name: offer.name,
             price: offer.price,
+            original_price: offer.original_price || '',
             category: offer.category,
             chef_id: offer.chef_id,
             image_url: offer.image_url || '',
@@ -52,6 +69,7 @@ export const AdminOffers: React.FC<AdminOffersProps> = ({ offers, chefs, onAdd, 
                 name: formData.name,
                 title: formData.name, // Required field - sync with name
                 price: Number(formData.price),
+                original_price: formData.original_price ? Number(formData.original_price) : null,
                 category: formData.category,
                 chef_id: formData.chef_id || null,
                 image_url: formData.image_url || null,
@@ -62,20 +80,29 @@ export const AdminOffers: React.FC<AdminOffersProps> = ({ offers, chefs, onAdd, 
             };
 
             if (currentOffer) {
-                const { data, error } = await supabase
+                // Update existing offer
+                const { error: updateError } = await supabase
                     .from('products')
                     .update(offerData)
-                    .eq('id', currentOffer.id)
-                    .select()
-                    .single();
+                    .eq('id', currentOffer.id);
 
-                if (error) throw error;
-                if (data) {
-                    const updatedOffer: MenuItem = { ...data };
-                    onEdit(updatedOffer);
-                }
+                if (updateError) throw updateError;
+
+                // Fetch updated offer
+                const { data, error: selectError } = await supabase
+                    .from('products')
+                    .select('*')
+                    .eq('id', currentOffer.id)
+                    .maybeSingle();
+
+                if (selectError) throw selectError;
+                if (!data) throw new Error('Failed to fetch updated offer');
+
+                const updatedOffer: MenuItem = { ...data };
+                onEdit(updatedOffer);
                 showNotification('success', 'تم تحديث العرض بنجاح! ✅');
             } else {
+                // Add new offer
                 const { data, error } = await supabase
                     .from('products')
                     .insert([offerData])
@@ -83,15 +110,23 @@ export const AdminOffers: React.FC<AdminOffersProps> = ({ offers, chefs, onAdd, 
                     .single();
 
                 if (error) throw error;
-                if (data) {
-                    const newOffer: MenuItem = { ...data };
-                    onAdd(newOffer);
-                }
+                if (!data) throw new Error('Failed to create offer - no data returned');
+
+                const newOffer: MenuItem = { ...data };
+                onAdd(newOffer);
                 showNotification('success', 'تم إضافة العرض بنجاح! ✅');
             }
 
             setIsModalOpen(false);
-            setFormData({ name: '', price: '', category: '', chef_id: '', image_url: '', description: '' });
+            setFormData({ 
+                name: '', 
+                price: '', 
+                original_price: '', 
+                category: '', 
+                chef_id: '', 
+                image_url: '', 
+                description: '' 
+            });
         } catch (error) {
             console.error('Error saving offer:', error);
             showNotification('error', `خطأ: ${error instanceof Error ? error.message : 'فشل حفظ العرض'}`);
@@ -141,7 +176,12 @@ export const AdminOffers: React.FC<AdminOffersProps> = ({ offers, chefs, onAdd, 
                                     <span className="block text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded w-fit mt-1">عرض 🔥</span>
                                 </td>
                                 <td className="p-4">
-                                    <span className="text-green-600 font-bold">{offer.price} ج.م</span>
+                                    <div className="flex flex-col">
+                                        <span className="text-green-600 font-bold">{offer.price} ج.م</span>
+                                        {offer.original_price && offer.original_price > offer.price && (
+                                            <span className="text-gray-400 text-xs line-through">{offer.original_price} ج.م</span>
+                                        )}
+                                    </div>
                                 </td>
                                 <td className="p-4 text-sm text-gray-600">
                                     {offer.category}
@@ -174,15 +214,23 @@ export const AdminOffers: React.FC<AdminOffersProps> = ({ offers, chefs, onAdd, 
                     disabled={isLoading}
                     required 
                 />
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-3 gap-4">
                     <input 
                         type="number" 
-                        placeholder="السعر" 
+                        placeholder="السعر بعد الخصم" 
                         className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 text-gray-900" 
                         value={formData.price} 
                         onChange={e => setFormData({...formData, price: e.target.value})} 
                         disabled={isLoading}
                         required 
+                    />
+                    <input 
+                        type="number" 
+                        placeholder="السعر الأصلي (قبل)" 
+                        className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 text-gray-900" 
+                        value={formData.original_price} 
+                        onChange={e => setFormData({...formData, original_price: e.target.value})} 
+                        disabled={isLoading}
                     />
                     <input 
                         type="text" 

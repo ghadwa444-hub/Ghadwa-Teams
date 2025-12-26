@@ -45,7 +45,7 @@ export class SupabaseDataService {
 
   // Helper: Keep only allowed chef fields to avoid sending unexpected columns
   private sanitizeChefPayload(chef: Partial<Chef>): Partial<Chef> {
-    const allowed: (keyof Chef)[] = ['chef_name', 'specialty', 'description', 'image_url', 'is_active', 'rating', 'profile_id'];
+    const allowed: (keyof Chef)[] = ['chef_name', 'specialty', 'description', 'image_url', 'cover_image_url', 'working_hours', 'delivery_time', 'is_active', 'rating', 'profile_id'];
     const out: Partial<Chef> = {};
     for (const key of allowed) {
       if (chef[key] !== undefined) out[key] = chef[key];
@@ -59,6 +59,15 @@ export class SupabaseDataService {
     const out: any = {};
     for (const key of allowed) {
       if (product[key] !== undefined) out[key] = product[key];
+    }
+    
+    // Clean chef_id: empty string or whitespace becomes null
+    if (out.chef_id !== undefined) {
+      if (typeof out.chef_id === 'string' && out.chef_id.trim() === '') {
+        out.chef_id = null;
+      } else if (out.chef_id === '') {
+        out.chef_id = null;
+      }
     }
     
     // Database has dual fields (title ↔ name, is_active ↔ is_available, preparation_time ↔ prep_time)
@@ -286,25 +295,46 @@ export class SupabaseDataService {
 
   async updateProduct(id: string, updates: Partial<Product>): Promise<Product | null> {
     try {
-      logger.info('SUPABASE', '📝 Updating product...', { id });
+      logger.info('SUPABASE', '📝 Updating product...', { id, updates });
 
       if (!this.isValidUUID(id)) {
         throw new Error(`Invalid product id (expected UUID): ${id}`);
       }
 
       const payload = this.sanitizeProductPayload(updates);
+      logger.info('SUPABASE', '📝 Update payload', { payload });
 
-      // Use maybeSingle to avoid throwing when 0 rows are returned
-      const { data, error } = await supabase
+      // First, try to update
+      const { error: updateError } = await supabase
         .from('products')
         .update(payload)
+        .eq('id', id);
+
+      if (updateError) {
+        logger.error('SUPABASE', '❌ Update error', updateError);
+        throw updateError;
+      }
+
+      logger.info('SUPABASE', '✅ Update successful, fetching updated product...');
+
+      // Now fetch the updated product
+      const { data, error: selectError } = await supabase
+        .from('products')
+        .select('*')
         .eq('id', id)
-        .select()
         .maybeSingle();
 
-      if (error) throw error;
+      if (selectError) {
+        logger.error('SUPABASE', '❌ Select error after update', selectError);
+        throw selectError;
+      }
 
-      logger.info('SUPABASE', '✅ Product updated successfully');
+      if (!data) {
+        logger.warn('SUPABASE', '⚠️ Product not found after update', { id });
+        return null;
+      }
+
+      logger.info('SUPABASE', '✅ Product updated successfully', { id, name: data.name });
       return data;
     } catch (error) {
       logger.error('SUPABASE', '❌ Failed to update product', error);

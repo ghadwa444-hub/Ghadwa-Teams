@@ -89,15 +89,24 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigate, currentPage, cartCou
                             <button onClick={onLogout} className="text-xs text-gray-500 underline hover:text-red-500">خروج</button>
                         </div>
                     ) : (
-                        <a
-                            href={`https://wa.me/${whatsappNumber}`}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="bg-green-500 text-white px-5 py-2.5 rounded-full font-bold hover:bg-green-600 transition shadow-lg shadow-green-500/20 text-sm hidden md:flex items-center gap-2"
-                        >
-                            <i className="fa-brands fa-whatsapp text-lg"></i>
-                            تواصل معنا
-                        </a>
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={onOpenAuth}
+                                className="bg-[#8B2525] text-white px-5 py-2.5 rounded-full font-bold hover:bg-[#6b1c1c] transition shadow-lg shadow-red-500/20 text-sm hidden md:flex items-center gap-2"
+                            >
+                                <i className="fa-solid fa-user text-lg"></i>
+                                تسجيل الدخول
+                            </button>
+                            <a
+                                href={`https://wa.me/${whatsappNumber}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="bg-green-500 text-white px-4 py-2.5 rounded-full font-bold hover:bg-green-600 transition shadow-lg shadow-green-500/20 text-sm hidden md:flex items-center gap-2"
+                            >
+                                <i className="fa-brands fa-whatsapp text-lg"></i>
+                                تواصل معنا
+                            </a>
+                        </div>
                     )}
 
                     <button className="md:hidden text-gray-900 text-2xl" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
@@ -114,9 +123,14 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigate, currentPage, cartCou
                     <button onClick={() => { onNavigate('track-order'); setMobileMenuOpen(false); }} className="text-right font-bold text-gray-700 py-2 border-b border-gray-50">تتبع طلبك</button>
                     <button onClick={() => { onNavigate('favorites'); setMobileMenuOpen(false); }} className="text-right font-bold text-gray-700 py-2 border-b border-gray-50">المفضلة</button>
                     {!isLoggedIn && (
-                        <a href={`https://wa.me/${whatsappNumber}`} target="_blank" rel="noreferrer" className="text-right font-bold text-green-500 py-2 border-b border-gray-50 flex items-center gap-2">
-                            <i className="fa-brands fa-whatsapp"></i> تواصل معنا
-                        </a>
+                        <>
+                            <button onClick={() => { onOpenAuth(); setMobileMenuOpen(false); }} className="text-right font-bold text-[#8B2525] py-2 border-b border-gray-50 flex items-center gap-2">
+                                <i className="fa-solid fa-user"></i> تسجيل الدخول
+                            </button>
+                            <a href={`https://wa.me/${whatsappNumber}`} target="_blank" rel="noreferrer" className="text-right font-bold text-green-500 py-2 border-b border-gray-50 flex items-center gap-2">
+                                <i className="fa-brands fa-whatsapp"></i> تواصل معنا
+                            </a>
+                        </>
                     )}
                     {isLoggedIn && isAdmin && <button onClick={() => { onNavigate('admin-dashboard'); setMobileMenuOpen(false); }} className="text-right font-bold text-gray-900 py-2 border-b border-gray-50">لوحة التحكم</button>}
                     {isLoggedIn && <button onClick={() => { onLogout(); setMobileMenuOpen(false); }} className="text-right font-bold text-red-500 py-2 border-b border-gray-50">تسجيل خروج</button>}
