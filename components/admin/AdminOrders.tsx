@@ -259,7 +259,7 @@ export const AdminOrders: React.FC<AdminOrdersProps> = ({ orders, updateOrderSta
                         <tbody className="divide-y divide-gray-100 text-gray-800">
                             {orders.map(order => (
                                 <tr key={order.id} className="hover:bg-gray-50 transition-colors">
-                                    <td className="p-5 font-bold text-xs">#{order.id.slice(0, 8)}...</td>
+                                    <td className="p-5 font-bold text-xs">#{String(order.id).slice(0, 8)}...</td>
                                     <td className="p-5">
                                         <div className="font-bold text-gray-900">{order.customer_name}</div>
                                         <div className="text-xs text-gray-500">{order.created_at ? new Date(order.created_at).toLocaleDateString('ar-EG') : '-'}</div>

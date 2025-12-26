@@ -1,7 +1,8 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Order, Chef } from '../../types';
 import { AdminStatsCard } from '../UIHelpers';
+import { supabase } from '../../services/supabase';
 
 interface AdminDashboardProps {
     orders: Order[];
@@ -12,6 +13,58 @@ interface AdminDashboardProps {
 }
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({ orders, chefs, mealsCount, offersCount, visitorsCount }) => {
+    const [ordersWithItems, setOrdersWithItems] = useState<Order[]>(orders);
+
+    // Fetch order_items for orders that don't have them
+    useEffect(() => {
+        const fetchOrderItems = async () => {
+            const ordersNeedingItems = orders.filter(order => {
+                const items = (order as any).order_items || order.items || order.itemsDetails || [];
+                return !items || items.length === 0;
+            });
+
+            if (ordersNeedingItems.length === 0) {
+                setOrdersWithItems(orders);
+                return;
+            }
+
+            const updatedOrders = await Promise.all(orders.map(async (order) => {
+                const items = (order as any).order_items || order.items || order.itemsDetails || [];
+                
+                // If order already has items, return as is
+                if (items && items.length > 0) {
+                    return order;
+                }
+
+                // Fetch items separately
+                try {
+                    const { data: itemsData, error } = await supabase
+                        .from('order_items')
+                        .select('*')
+                        .eq('order_id', order.id);
+
+                    if (error) {
+                        console.error(`Error fetching items for order ${order.id}:`, error);
+                        return order;
+                    }
+
+                    return {
+                        ...order,
+                        items: itemsData || [],
+                        itemsDetails: itemsData || [],
+                        order_items: itemsData || []
+                    };
+                } catch (error) {
+                    console.error(`Error fetching items for order ${order.id}:`, error);
+                    return order;
+                }
+            }));
+
+            setOrdersWithItems(updatedOrders);
+        };
+
+        fetchOrderItems();
+    }, [orders]);
     // Basic Calculations - Use total_amount from database
     const totalRevenue = orders.reduce((acc, curr) => acc + (Number(curr.total_amount) || Number(curr.total) || 0), 0);
     const activeOrders = orders.filter(o => o.status === 'pending' || o.status === 'preparing' || o.status === 'out_for_delivery').length;
@@ -335,7 +388,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ orders, chefs, m
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100 text-gray-800">
-                            {orders.slice(0, 5).map(order => {
+                            {ordersWithItems.slice(0, 5).map(order => {
                                 // Format order number
                                 const orderNumber = order.order_number 
                                     ? `#${order.order_number.split('-').pop() || order.order_number}` 
