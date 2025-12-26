@@ -1,5 +1,5 @@
 import React from 'react'
-import { Box, CartItem, MenuItem } from '../../types'
+import { Box, CartItem, MenuItem, Chef } from '../../types'
 import { AddToCartButton } from '../UIHelpers'
 
 interface BoxCardProps {
@@ -7,13 +7,22 @@ interface BoxCardProps {
   cart: CartItem[]
   updateQuantity: (id: number, qty: number, item?: MenuItem) => void
   isOpen: boolean
+  chefs?: Chef[] // Add chefs prop to lookup chef names
 }
+
+// Helper to get chef name from chef_id
+const getChefName = (chefId?: string, chefs: Chef[] = []): string => {
+  if (!chefId || !chefs.length) return 'مطبخ';
+  const chef = chefs.find(c => c.id === chefId);
+  return chef?.chef_name || 'مطبخ';
+};
 
 export const BoxCard: React.FC<BoxCardProps> = ({
   box,
   cart,
   updateQuantity,
-  isOpen
+  isOpen,
+  chefs = []
 }) => {
   return (
     <div className="flex flex-col h-full bg-white rounded-lg sm:rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 group overflow-hidden">
@@ -51,6 +60,8 @@ export const BoxCard: React.FC<BoxCardProps> = ({
               <i className="fa-solid fa-utensils text-red-700"></i>
               صندوق مميز
             </span>
+            <span className="mx-1">•</span>
+            <span className="text-gray-400">{getChefName(box.chef_id, chefs) || box.chef || 'مطبخ'}</span>
           </div>
 
           {/* ITEMS TAGS - Responsive Flex Wrap */}
@@ -77,10 +88,18 @@ export const BoxCard: React.FC<BoxCardProps> = ({
 
           {/* BUTTON - Full Width, Min 44px Height (mobile touch target) */}
           <AddToCartButton
-            item={box as unknown as MenuItem}
+            item={{
+              ...box,
+              id: box.id, // Ensure id is preserved (number for boxes)
+              chef_id: box.chef_id || (box.chef ? chefs.find(c => c.chef_name === box.chef)?.id : undefined) || undefined,
+              chef: getChefName(box.chef_id, chefs) || box.chef || 'مطبخ',
+              is_available: box.is_active !== false,
+              price: box.price,
+              name: box.name
+            } as unknown as MenuItem}
             cart={cart}
             updateQuantity={updateQuantity}
-            className="w-full h-11 sm:h-12 lg:h-13 shadow-lg text-sm sm:text-base font-semibold transition-all duration-200"
+            className="w-full shadow-lg text-sm sm:text-base font-semibold transition-all duration-200"
             disabled={!box.is_active}
           />
         </div>

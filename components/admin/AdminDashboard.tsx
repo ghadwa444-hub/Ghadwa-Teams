@@ -346,16 +346,48 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ orders, chefs, m
                                 
                                 // Get order items as string
                                 let itemsText = '';
-                                if (order.itemsDetails && order.itemsDetails.length > 0) {
-                                    itemsText = order.itemsDetails.map((item: any) => 
-                                        `${item.name || item.product_name || 'منتج'} x${item.quantity || 1}`
-                                    ).join(', ');
-                                } else if (order.items) {
-                                    itemsText = typeof order.items === 'string' ? order.items : JSON.stringify(order.items);
-                                } else if (order.items && Array.isArray(order.items)) {
-                                    itemsText = order.items.map((item: any) => 
-                                        `${item.name || item.product_name || 'منتج'} x${item.quantity || 1}`
-                                    ).join(', ');
+                                
+                                // Try multiple ways to get order items
+                                let orderItems: any[] = [];
+                                
+                                // Method 1: Check order_items from joined query (most reliable)
+                                if ((order as any).order_items && Array.isArray((order as any).order_items) && (order as any).order_items.length > 0) {
+                                    orderItems = (order as any).order_items;
+                                }
+                                // Method 2: Check items array (from getOrders mapping)
+                                else if (order.items && Array.isArray(order.items) && order.items.length > 0) {
+                                    orderItems = order.items;
+                                }
+                                // Method 3: Check itemsDetails array (legacy)
+                                else if (order.itemsDetails && Array.isArray(order.itemsDetails) && order.itemsDetails.length > 0) {
+                                    orderItems = order.itemsDetails;
+                                }
+                                
+                                // Debug logging for ALL orders to see what's happening
+                                console.log(`Order ${order.id} items:`, {
+                                    orderId: order.id,
+                                    orderNumber: orderNumber,
+                                    hasOrderItems: !!(order as any).order_items,
+                                    orderItemsArray: (order as any).order_items,
+                                    orderItemsLength: (order as any).order_items?.length || 0,
+                                    hasItems: !!order.items,
+                                    itemsArray: order.items,
+                                    itemsLength: Array.isArray(order.items) ? order.items.length : 'not array',
+                                    hasItemsDetails: !!order.itemsDetails,
+                                    itemsDetailsArray: order.itemsDetails,
+                                    finalOrderItems: orderItems,
+                                    finalOrderItemsLength: orderItems.length
+                                });
+                                
+                                if (orderItems.length > 0) {
+                                    itemsText = orderItems.map((item: any) => {
+                                        const itemName = item.product_name || item.name || item.productName || 'منتج';
+                                        const quantity = item.quantity || 1;
+                                        return `${itemName} x${quantity}`;
+                                    }).join(', ');
+                                } else if (order.items && typeof order.items === 'string' && order.items.trim() !== '') {
+                                    // Legacy: items stored as string
+                                    itemsText = order.items;
                                 } else {
                                     itemsText = 'لا توجد تفاصيل';
                                 }

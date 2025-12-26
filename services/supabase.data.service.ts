@@ -371,17 +371,89 @@ export class SupabaseDataService {
 
   async getOrders(): Promise<Order[]> {
     try {
-      logger.info('SUPABASE', '🔍 Fetching orders...');
+      logger.info('SUPABASE', '🔍 Fetching orders with items...');
 
+      // Try to fetch orders with order_items joined
       const { data, error } = await supabase
         .from('orders')
-        .select('*')
+        .select(`
+          *,
+          order_items (
+            id,
+            product_id,
+            product_name,
+            quantity,
+            unit_price,
+            total_price,
+            notes
+          )
+        `)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        logger.warn('SUPABASE', '⚠️ Failed to fetch orders with join, trying separate query', error);
+        // Fallback: fetch orders and items separately
+        const { data: ordersData, error: ordersError } = await supabase
+          .from('orders')
+          .select('*')
+          .order('created_at', { ascending: false });
 
-      logger.info('SUPABASE', `✅ Fetched ${data.length} orders`);
-      return data || [];
+        if (ordersError) throw ordersError;
+
+        // Fetch items for each order
+        const ordersWithItems = await Promise.all((ordersData || []).map(async (order: any) => {
+          const { data: itemsData } = await supabase
+            .from('order_items')
+            .select('*')
+            .eq('order_id', order.id);
+
+          return {
+            ...order,
+            items: itemsData || [],
+            itemsDetails: itemsData || []
+          };
+        }));
+
+        logger.info('SUPABASE', `✅ Fetched ${ordersWithItems.length} orders with items (separate queries)`);
+        return ordersWithItems;
+      }
+
+      // Map order_items to items array for compatibility
+      const ordersWithItems = await Promise.all((data || []).map(async (order: any) => {
+        let items = order.order_items || [];
+        
+        // If order_items is empty or null, try to fetch separately (RLS might block join)
+        if (!items || items.length === 0) {
+          logger.debug('SUPABASE', `Order ${order.id} has no items from join, fetching separately...`);
+          const { data: itemsData, error: itemsError } = await supabase
+            .from('order_items')
+            .select('*')
+            .eq('order_id', order.id);
+          
+          if (itemsError) {
+            logger.warn('SUPABASE', `Failed to fetch items for order ${order.id}`, itemsError);
+          } else {
+            items = itemsData || [];
+            logger.debug('SUPABASE', `Fetched ${items.length} items separately for order ${order.id}`);
+          }
+        }
+        
+        logger.debug('SUPABASE', `Order ${order.id} has ${items.length} items`, {
+          orderId: order.id,
+          itemsCount: items.length,
+          items: items.map((i: any) => ({ name: i.product_name, qty: i.quantity }))
+        });
+        
+        return {
+          ...order,
+          items: items,
+          itemsDetails: items, // For backward compatibility
+          order_items: items // Also set order_items for consistency
+        };
+      }));
+
+      logger.info('SUPABASE', `✅ Fetched ${ordersWithItems.length} orders with items`);
+      return ordersWithItems || [];
     } catch (error) {
       logger.error('SUPABASE', '❌ Failed to fetch orders', error);
       return [];
@@ -390,14 +462,37 @@ export class SupabaseDataService {
 
   async getOrdersByCustomer(customerId: string): Promise<Order[]> {
     try {
+      logger.info('SUPABASE', '🔍 Fetching customer orders with items...', { customerId });
+
+      // Fetch orders with order_items joined
       const { data, error } = await supabase
         .from('orders')
-        .select('*')
+        .select(`
+          *,
+          order_items (
+            id,
+            product_id,
+            product_name,
+            quantity,
+            unit_price,
+            total_price,
+            notes
+          )
+        `)
         .eq('customer_id', customerId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return data || [];
+
+      // Map order_items to items array for compatibility
+      const ordersWithItems = (data || []).map((order: any) => ({
+        ...order,
+        items: order.order_items || [],
+        itemsDetails: order.order_items || [] // For backward compatibility
+      }));
+
+      logger.info('SUPABASE', `✅ Fetched ${ordersWithItems.length} customer orders with items`);
+      return ordersWithItems || [];
     } catch (error) {
       logger.error('SUPABASE', '❌ Failed to fetch customer orders', error);
       return [];

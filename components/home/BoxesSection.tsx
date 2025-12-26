@@ -1,6 +1,6 @@
 
 import React from 'react'
-import { Box, CartItem, MenuItem } from '../../types'
+import { Box, CartItem, MenuItem, Chef } from '../../types'
 import { BoxCard } from './BoxCard'
 import { SectionTitle } from './SectionTitle'
 
@@ -8,12 +8,14 @@ interface BoxesSectionProps {
   boxes: Box[]
   cart: CartItem[]
   updateQuantity: (id: number, qty: number, item?: MenuItem) => void
+  chefs?: Chef[] // Add chefs prop to lookup chef names
 }
 
 export const BoxesSection: React.FC<BoxesSectionProps> = ({
   boxes,
   cart,
-  updateQuantity
+  updateQuantity,
+  chefs = []
 }) => {
   return (
     <section className="py-12 sm:py-16 md:py-20 lg:py-24 bg-gray-50">
@@ -37,6 +39,7 @@ export const BoxesSection: React.FC<BoxesSectionProps> = ({
                 cart={cart}
                 updateQuantity={updateQuantity}
                 isOpen={isOpen}
+                chefs={chefs}
               />
             )
           })}

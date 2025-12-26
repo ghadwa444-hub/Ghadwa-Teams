@@ -142,6 +142,7 @@ export interface Box {
   // Legacy fields (original schema)
   serves?: string;
   chef?: string;
+  chef_id?: string;     // UUID reference to chefs table
   items?: string[];     // ARRAY type in database
   img?: string;
   color?: string;

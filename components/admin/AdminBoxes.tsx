@@ -47,14 +47,16 @@ export const AdminBoxes: React.FC<AdminBoxesProps> = ({ boxes, chefs, onAdd, onE
     const openEdit = (box: Box) => {
         setCurrentBox(box);
         
-        // Find chef by name (boxes use chef name, not chef_id)
-        const chef = chefs.find(c => c.chef_name === box.chef);
+        // Find chef by chef_id first, then by name (for legacy boxes)
+        const chef = box.chef_id 
+            ? chefs.find(c => c.id === box.chef_id)
+            : chefs.find(c => c.chef_name === box.chef);
         
         setFormData({ 
             name: box.name,
             price: box.price,
             serves: box.serves || '',
-            chef_id: chef?.id || '',
+            chef_id: box.chef_id || chef?.id || '',
             itemsString: box.items?.join(', ') || '',
             image_url: box.image_url || box.img || ''
         });
@@ -86,7 +88,8 @@ export const AdminBoxes: React.FC<AdminBoxesProps> = ({ boxes, chefs, onAdd, onE
                 name: formData.name,
                 price: Number(formData.price),
                 serves: formData.serves,
-                chef: chefName, // Use 'chef' (TEXT) not 'chef_id'
+                chef: chefName, // Use 'chef' (TEXT) for legacy compatibility
+                chef_id: formData.chef_id || null, // Also save chef_id (UUID)
                 items: items,
                 image_url: formData.image_url || null,
                 img: formData.image_url || null, // Also set legacy 'img' field

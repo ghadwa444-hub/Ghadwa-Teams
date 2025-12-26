@@ -94,6 +94,11 @@ const OrderCard: React.FC<OrderCardProps & { isLoading: boolean; onStatusChange:
                     <i className="fa-solid fa-circle-check"></i> مكتمل
                 </span>
             )}
+            {order.status === 'cancelled' && (
+                <span className="text-red-600 text-xs font-bold flex items-center gap-1">
+                    <i className="fa-solid fa-ban"></i> ملغاة
+                </span>
+            )}
         </div>
     </div>
 );};
@@ -103,6 +108,37 @@ export const AdminOrders: React.FC<AdminOrdersProps> = ({ orders, updateOrderSta
     const [isLoading, setIsLoading] = useState(false);
     const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
     const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+
+    // Debug: Log orders and their statuses
+    React.useEffect(() => {
+        console.log('AdminOrders - All orders:', orders.length);
+        const statusCounts = {
+            pending: orders.filter(o => o.status === 'pending' || o.status?.toLowerCase() === 'pending').length,
+            preparing: orders.filter(o => o.status === 'preparing' || o.status?.toLowerCase() === 'preparing').length,
+            out_for_delivery: orders.filter(o => o.status === 'out_for_delivery' || o.status?.toLowerCase() === 'out_for_delivery').length,
+            delivered: orders.filter(o => o.status === 'delivered' || o.status?.toLowerCase() === 'delivered').length,
+            confirmed: orders.filter(o => o.status === 'confirmed' || o.status?.toLowerCase() === 'confirmed').length,
+            cancelled: orders.filter(o => o.status === 'cancelled' || o.status?.toLowerCase() === 'cancelled').length,
+            other: orders.filter(o => {
+                const s = o.status?.toLowerCase();
+                return !['pending', 'preparing', 'out_for_delivery', 'delivered', 'confirmed', 'cancelled'].includes(s);
+            }).length
+        };
+        console.log('Orders by status:', statusCounts);
+        
+        // Log all pending orders
+        const pendingOrders = orders.filter(o => o.status === 'pending' || o.status?.toLowerCase() === 'pending');
+        console.log('Pending orders:', pendingOrders.map(o => ({ id: o.id, status: o.status, customer: o.customer_name || o.customer })));
+        
+        // Log all orders with their exact status
+        console.log('All orders with status:', orders.map(o => ({ 
+            id: o.id, 
+            status: o.status, 
+            statusType: typeof o.status,
+            statusLength: o.status?.length,
+            customer: o.customer_name || o.customer 
+        })));
+    }, [orders]);
 
     const showNotification = (type: 'success' | 'error', message: string) => {
         setNotification({ type, message });
@@ -273,7 +309,7 @@ export const AdminOrders: React.FC<AdminOrdersProps> = ({ orders, updateOrderSta
                     </table>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 flex-1 min-h-0">
+                <div className="grid grid-cols-1 md:grid-cols-5 gap-4 flex-1 min-h-0">
                     {/* Pending Column */}
                     <div className="flex flex-col bg-gray-50 rounded-2xl border border-gray-200 h-full overflow-hidden">
                         <div className="p-4 border-b border-gray-200 bg-yellow-50 flex justify-between items-center">
@@ -281,11 +317,17 @@ export const AdminOrders: React.FC<AdminOrdersProps> = ({ orders, updateOrderSta
                                 <i className="fa-regular fa-clock"></i> الانتظار
                             </h3>
                             <span className="bg-white px-2 py-1 rounded-lg text-xs font-bold text-yellow-800 shadow-sm border border-yellow-100">
-                                {orders.filter(o => o.status === 'pending').length}
+                                {orders.filter(o => {
+                                    const status = (o.status || '').toLowerCase().trim();
+                                    return status === 'pending' || status === 'confirmed';
+                                }).length}
                             </span>
                         </div>
                         <div className="p-4 overflow-y-auto flex-1 custom-scrollbar space-y-3">
-                            {orders.filter(o => o.status === 'pending').map(order => (
+                            {orders.filter(o => {
+                                const status = (o.status || '').toLowerCase().trim();
+                                return status === 'pending' || status === 'confirmed';
+                            }).map(order => (
                                 <OrderCard 
                                     key={order.id} 
                                     order={order} 
@@ -307,11 +349,11 @@ export const AdminOrders: React.FC<AdminOrdersProps> = ({ orders, updateOrderSta
                                 <i className="fa-solid fa-fire-burner"></i> التحضير
                             </h3>
                             <span className="bg-white px-2 py-1 rounded-lg text-xs font-bold text-orange-800 shadow-sm border border-orange-100">
-                                {orders.filter(o => o.status === 'preparing').length}
+                                {orders.filter(o => (o.status || '').toLowerCase().trim() === 'preparing').length}
                             </span>
                         </div>
                         <div className="p-4 overflow-y-auto flex-1 custom-scrollbar space-y-3">
-                            {orders.filter(o => o.status === 'preparing').map(order => (
+                            {orders.filter(o => (o.status || '').toLowerCase().trim() === 'preparing').map(order => (
                                 <OrderCard 
                                     key={order.id} 
                                     order={order} 
@@ -333,11 +375,11 @@ export const AdminOrders: React.FC<AdminOrdersProps> = ({ orders, updateOrderSta
                                 <i className="fa-solid fa-motorcycle"></i> الطريق
                             </h3>
                             <span className="bg-white px-2 py-1 rounded-lg text-xs font-bold text-blue-800 shadow-sm border border-blue-100">
-                                {orders.filter(o => o.status === 'out_for_delivery').length}
+                                {orders.filter(o => (o.status || '').toLowerCase().trim() === 'out_for_delivery').length}
                             </span>
                         </div>
                         <div className="p-4 overflow-y-auto flex-1 custom-scrollbar space-y-3">
-                            {orders.filter(o => o.status === 'out_for_delivery').map(order => (
+                            {orders.filter(o => (o.status || '').toLowerCase().trim() === 'out_for_delivery').map(order => (
                                 <OrderCard 
                                     key={order.id} 
                                     order={order} 
@@ -359,11 +401,37 @@ export const AdminOrders: React.FC<AdminOrdersProps> = ({ orders, updateOrderSta
                                 <i className="fa-solid fa-check-double"></i> تم
                             </h3>
                             <span className="bg-white px-2 py-1 rounded-lg text-xs font-bold text-green-800 shadow-sm border border-green-100">
-                                {orders.filter(o => o.status === 'delivered').length}
+                                {orders.filter(o => (o.status || '').toLowerCase().trim() === 'delivered').length}
                             </span>
                         </div>
                         <div className="p-4 overflow-y-auto flex-1 custom-scrollbar space-y-3">
-                            {orders.filter(o => o.status === 'delivered').map(order => (
+                            {orders.filter(o => (o.status || '').toLowerCase().trim() === 'delivered').map(order => (
+                                <OrderCard 
+                                    key={order.id} 
+                                    order={order} 
+                                    updateOrderStatus={updateOrderStatus} 
+                                    onDeleteOrder={onDeleteOrder} 
+                                    onViewOrder={onViewOrder}
+                                    isLoading={isLoading}
+                                    onStatusChange={handleStatusChange}
+                                    onDeleteConfirm={setDeleteConfirm}
+                                />
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Cancelled Column */}
+                    <div className="flex flex-col bg-gray-50 rounded-2xl border border-gray-200 h-full overflow-hidden">
+                        <div className="p-4 border-b border-gray-200 bg-red-50 flex justify-between items-center">
+                            <h3 className="font-bold text-red-800 flex items-center gap-2 text-sm">
+                                <i className="fa-solid fa-ban"></i> ملغاة
+                            </h3>
+                            <span className="bg-white px-2 py-1 rounded-lg text-xs font-bold text-red-800 shadow-sm border border-red-100">
+                                {orders.filter(o => (o.status || '').toLowerCase().trim() === 'cancelled').length}
+                            </span>
+                        </div>
+                        <div className="p-4 overflow-y-auto flex-1 custom-scrollbar space-y-3">
+                            {orders.filter(o => (o.status || '').toLowerCase().trim() === 'cancelled').map(order => (
                                 <OrderCard 
                                     key={order.id} 
                                     order={order} 

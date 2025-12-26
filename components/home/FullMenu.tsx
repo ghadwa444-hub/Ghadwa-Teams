@@ -28,11 +28,11 @@ export const FullMenu: React.FC<FullMenuProps> = ({ menuItems, cart, updateQuant
         return chef?.is_active !== false; // Default to true if chef not found
     };
 
-    // Filter items by category and exclude items from inactive chefs
+    // Filter items by category only - show all items (including from closed chefs)
     const filteredItems = (activeCategory === "الكل" 
         ? menuItems 
         : menuItems.filter(item => item.category === activeCategory)
-    ).filter(item => isChefActive(item.chef_id)); // Only show items from active chefs
+    ); // Show all items, even from closed chefs (they'll be disabled)
 
     return (
         <section id="menu" className="py-12 sm:py-16 md:py-20 lg:py-24 bg-white">
@@ -103,7 +103,7 @@ export const FullMenu: React.FC<FullMenuProps> = ({ menuItems, cart, updateQuant
                                         <i className="fa-solid fa-clock"></i>
                                         {item.prep_time ? `${item.prep_time} د` : "45 د"}
                                         <span className="mx-1">•</span>
-                                        <span className="text-gray-400">{item.chef || getChefName(item.chef_id) || "مطبخ"}</span>
+                                        <span className="text-gray-400">{getChefName(item.chef_id)}</span>
                                     </p>
                                     <AddToCartButton 
                                         item={item} 

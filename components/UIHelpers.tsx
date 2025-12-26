@@ -12,7 +12,8 @@ interface AddToCartButtonProps {
 }
 
 export const AddToCartButton: React.FC<AddToCartButtonProps> = ({ item, cart, updateQuantity, className = "", disabled = false, isLarge = false }) => {
-    const cartItem = cart.find(i => i.id === item.id);
+    // Normalize IDs for comparison (handle both string and number IDs)
+    const cartItem = cart.find(i => String(i.id) === String(item.id));
     const count = cartItem ? cartItem.quantity : 0;
 
     if (disabled) {
@@ -45,13 +46,24 @@ export const AddToCartButton: React.FC<AddToCartButtonProps> = ({ item, cart, up
     return (
         <div
             onClick={(e) => e.stopPropagation()}
-            className={`flex items-center justify-between bg-[#8B2525] text-white rounded-xl overflow-hidden font-bold shadow-lg animate-fade-in ${className} ${isLarge ? 'text-lg' : ''} !p-0`}
+            className={`flex items-center justify-between bg-[#8B2525] text-white rounded-xl overflow-hidden font-bold shadow-lg animate-fade-in ${className} ${isLarge ? 'text-lg' : ''}`}
+            style={{ padding: 0, minHeight: '44px' }}
         >
-            <button onClick={() => updateQuantity(item.id, count + 1, item)} className={`w-1/3 h-full flex items-center justify-center hover:bg-[#6b1c1c] transition-colors active:bg-[#4a1313] ${isLarge ? 'text-xl' : ''}`}>
+            <button 
+                onClick={() => updateQuantity(item.id, count + 1, item)} 
+                className={`w-1/3 h-full flex items-center justify-center hover:bg-[#6b1c1c] transition-colors active:bg-[#4a1313] py-2 ${isLarge ? 'text-xl' : 'text-base'}`}
+                type="button"
+            >
                 <i className="fa-solid fa-plus"></i>
             </button>
-            <span className={`w-1/3 text-center ${isLarge ? 'text-2xl font-black' : 'text-base'}`}>{count}</span>
-            <button onClick={() => updateQuantity(item.id, count - 1, item)} className={`w-1/3 h-full flex items-center justify-center hover:bg-[#6b1c1c] transition-colors active:bg-[#4a1313] ${isLarge ? 'text-xl' : ''}`}>
+            <span className={`w-1/3 text-center flex items-center justify-center ${isLarge ? 'text-2xl font-black' : 'text-base font-bold'}`} style={{ minHeight: '44px' }}>
+                {count}
+            </span>
+            <button 
+                onClick={() => updateQuantity(item.id, count - 1, item)} 
+                className={`w-1/3 h-full flex items-center justify-center hover:bg-[#6b1c1c] transition-colors active:bg-[#4a1313] py-2 ${isLarge ? 'text-xl' : 'text-base'}`}
+                type="button"
+            >
                 <i className={count === 1 ? 'fa-solid fa-trash' : 'fa-solid fa-minus'} ></i>
             </button>
         </div>

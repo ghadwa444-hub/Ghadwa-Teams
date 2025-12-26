@@ -179,7 +179,20 @@ const App = () => {
     const [reviewModalOpen, setReviewModalOpen] = useState(false);
     const [reviewItem, setReviewItem] = useState<MenuItem | null>(null);
 
-    const currentChefName = cart.length > 0 ? cart[0].chef : null;
+    // Get current chef_id from cart (use first item's chef_id)
+    const getCurrentChefId = (): string | null => {
+        if (cart.length === 0) return null;
+        return cart[0].chef_id || null;
+    };
+
+    // Helper to get chef name from chef_id
+    const getChefNameById = (chefId: string | null | undefined): string => {
+        if (!chefId) return 'مطبخ';
+        const chef = chefs.find(c => c.id === chefId);
+        return chef?.chef_name || 'مطبخ';
+    };
+
+    const currentChefName = cart.length > 0 ? (cart[0].chef || getChefNameById(cart[0].chef_id)) : null;
 
     // Find the most recent active order (not delivered) for the Live Tracker
     // Only show orders for the current logged-in user
@@ -277,14 +290,37 @@ const App = () => {
 
         logger.debug('CART', '🛒 Update quantity requested', { itemId: id, newQuantity: newQty, itemName: itemToAdd?.name });
 
-        if (itemToAdd && cart.length > 0 && itemToAdd.chef && currentChefName && itemToAdd.chef !== currentChefName) {
-            logger.warn('CART', '⚠️ Chef conflict detected', { 
-                currentChef: currentChefName, 
-                newChef: itemToAdd.chef,
-                currentItem: itemToAdd.name
-            });
-            setConflictModal({ isOpen: true, item: itemToAdd, newQuantity: 1 });
-            return;
+        // Check for chef conflict using chef_id (works for all products: meals, boxes, best sellers, offers)
+        const currentChefId = getCurrentChefId();
+        if (itemToAdd && cart.length > 0 && currentChefId) {
+            // Get chef_id from itemToAdd - if not present, try to find it from chef name
+            let newChefId = itemToAdd.chef_id;
+            if (!newChefId && itemToAdd.chef) {
+                // Try to find chef_id from chef name (for legacy boxes)
+                const chef = chefs.find(c => c.chef_name === itemToAdd.chef);
+                if (chef) {
+                    newChefId = chef.id;
+                }
+            }
+            
+            // Only check conflict if we have both chef_ids
+            if (newChefId) {
+                // Normalize chef_ids for comparison (handle null/undefined/empty strings)
+                const currentChefIdNormalized = String(currentChefId).trim().toLowerCase();
+                const newChefIdNormalized = String(newChefId).trim().toLowerCase();
+                
+                // Only show conflict if chef_ids are different and both are valid
+                if (currentChefIdNormalized !== newChefIdNormalized && currentChefIdNormalized && newChefIdNormalized) {
+                    logger.warn('CART', '⚠️ Chef conflict detected', { 
+                        currentChefId: currentChefIdNormalized, 
+                        newChefId: newChefIdNormalized,
+                        currentItem: itemToAdd.name,
+                        itemType: itemToAdd.constructor?.name || 'unknown'
+                    });
+                    setConflictModal({ isOpen: true, item: itemToAdd, newQuantity: newQty });
+                    return;
+                }
+            }
         }
 
         if (newQty === 0) {
@@ -311,12 +347,19 @@ const App = () => {
     const handleClearCartAndAdd = () => {
         const { item, newQuantity } = conflictModal;
         if (item) {
+            // Ensure chef name is set from chef_id if not already set
+            const itemWithChef = {
+                ...item,
+                chef: item.chef || (item.chef_id ? getChefNameById(item.chef_id) : 'مطبخ'),
+                quantity: newQuantity
+            };
             logger.info('CART', '🔄 Clearing cart and adding new item from different chef', { 
-                chefName: item.chef,
+                chefId: item.chef_id,
+                chefName: itemWithChef.chef,
                 itemName: item.name,
                 quantity: newQuantity
             });
-            setCart([{ ...item, quantity: newQuantity }]);
+            setCart([itemWithChef]);
         }
         setConflictModal({ isOpen: false, item: null, newQuantity: 0 });
     };
@@ -673,8 +716,8 @@ const App = () => {
                 isOpen={conflictModal.isOpen} 
                 onClose={() => setConflictModal({ isOpen: false, item: null, newQuantity: 0 })}
                 onConfirm={handleClearCartAndAdd}
-                currentChef={currentChefName}
-                newChef={conflictModal.item?.chef}
+                currentChef={getCurrentChefId() ? getChefNameById(getCurrentChefId()) : currentChefName || 'مطبخ'}
+                newChef={conflictModal.item?.chef_id ? getChefNameById(conflictModal.item.chef_id) : (conflictModal.item?.chef || 'مطبخ')}
             />
             <OrderSuccessModal 
                 isOpen={orderSuccess.isOpen} 
@@ -768,7 +811,7 @@ const App = () => {
                                 setActivePage('chef-details');
                             }} chefs={chefs} orders={orders} />
                             <BestSellers cart={cart} updateQuantity={updateQuantity} chefs={chefs} bestSellers={bestSellers} />
-                            <BoxesSection boxes={boxes} cart={cart} updateQuantity={updateQuantity} />
+                            <BoxesSection boxes={boxes} cart={cart} updateQuantity={updateQuantity} chefs={chefs} />
                             <FullMenu menuItems={menuItems} cart={cart} updateQuantity={updateQuantity} chefs={chefs} />
                         </main>
                     )}
