@@ -228,21 +228,85 @@ export const api = {
             }
             
             // Create order items (use itemsDetails which is the actual array, not items which is a string)
+            logger.info('API_ORDERS', '🔍 Checking order.itemsDetails...', {
+                hasItemsDetails: !!order.itemsDetails,
+                itemsDetailsLength: order.itemsDetails?.length || 0,
+                itemsDetails: order.itemsDetails
+            });
+            
             if (order.itemsDetails && order.itemsDetails.length > 0) {
-                const orderItems = order.itemsDetails.map((item: any) => ({
-                    order_id: createdOrder.id,
-                    product_id: item.id || null, // Use actual product ID from cart item
-                    product_name: item.name,
-                    quantity: item.quantity,
-                    unit_price: item.price,
-                    total_price: item.price * item.quantity  // total_price is the correct field name in order_items
-                }));
+                logger.info('API_ORDERS', '✅ Order has itemsDetails, creating order items...', {
+                    itemsCount: order.itemsDetails.length,
+                    firstItem: order.itemsDetails[0]
+                });
+                
+                const orderItems = order.itemsDetails.map((item: any) => {
+                    const unitPrice = item.price || 0;
+                    const quantity = item.quantity || 1;
+                    const totalPrice = unitPrice * quantity;
+                    
+                    // Build base order item (fields that exist in database)
+                    // Based on schema: id, order_id, product_id, product_name, quantity, unit_price, total_price, subtotal, notes
+                    const orderItem: any = {
+                        order_id: createdOrder.id,
+                        product_id: item.id || null, // Use actual product ID from cart item
+                        product_name: item.name,
+                        quantity: quantity,
+                        unit_price: unitPrice,
+                        total_price: totalPrice,
+                        subtotal: totalPrice, // subtotal is required (NOT NULL constraint)
+                        notes: item.notes || null
+                    };
+                    
+                    // DO NOT add product_price or image_url - they don't exist in schema
+                    // These fields will cause PGRST204 errors
+                    
+                    return orderItem;
+                });
+                
+                logger.info('API_ORDERS', '📦 Creating order items...', { 
+                    orderId: createdOrder.id,
+                    itemsCount: orderItems.length,
+                    items: orderItems.map((item: any) => ({
+                        product_name: item.product_name,
+                        quantity: item.quantity,
+                        unit_price: item.unit_price
+                    })),
+                    fullOrderItems: JSON.stringify(orderItems, null, 2)
+                });
+                
+                console.log('🚀 About to call createOrderItems with:', {
+                    orderId: createdOrder.id,
+                    itemsCount: orderItems.length,
+                    items: orderItems
+                });
                 
                 const itemsCreated = await supabaseDataService.createOrderItems(orderItems);
+                
+                console.log('🎯 createOrderItems returned:', itemsCreated);
                 if (!itemsCreated) {
-                    logger.warn('API_ORDERS', '⚠️ Order items creation failed');
-                    // Order created but items failed - still consider it success
+                    logger.error('API_ORDERS', '❌ Order items creation failed - ORDER WILL BE INCOMPLETE!', {
+                        orderId: createdOrder.id,
+                        itemsCount: orderItems.length
+                    });
+                    // Order created but items failed - this is a critical error!
+                    // We should still return success to not break the UI, but log it as an error
+                } else {
+                    logger.info('API_ORDERS', '✅ Order items created successfully', {
+                        orderId: createdOrder.id,
+                        itemsCount: orderItems.length
+                    });
+                    console.log('✅ Order items created successfully for order:', createdOrder.id);
                 }
+            } else {
+                logger.error('API_ORDERS', '❌ NO ITEMSDETAILS IN ORDER!', {
+                    orderId: createdOrder.id,
+                    hasItemsDetails: !!order.itemsDetails,
+                    itemsDetails: order.itemsDetails,
+                    items: order.items,
+                    orderKeys: Object.keys(order)
+                });
+                console.error('❌ NO ITEMSDETAILS IN ORDER!', order);
             }
             
             logger.info('API_ORDERS', '✅ Order saved to Supabase', { 

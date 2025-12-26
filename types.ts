@@ -125,8 +125,12 @@ export interface OrderItem {
   quantity: number;
   unit_price: number;
   total_price: number;
+  image_url?: string;   // Product image URL at time of order
   notes?: string;
   created_at?: string;
+  // Legacy fields for compatibility
+  product_price?: number;  // Alias for unit_price
+  subtotal?: number;       // Alias for total_price
 }
 
 /**

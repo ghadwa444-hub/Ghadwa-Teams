@@ -18,55 +18,80 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ orders, chefs, m
     // Fetch order_items for ALL orders (force refresh)
     useEffect(() => {
         const fetchOrderItems = async () => {
+            if (orders.length === 0) {
+                setOrdersWithItems([]);
+                return;
+            }
+
             console.log('🔄 Fetching order items for', orders.length, 'orders...');
             
             const updatedOrders = await Promise.all(orders.map(async (order) => {
-                // Always fetch items separately to ensure we have the latest data
+                // Check if order already has items
+                const existingItems = (order as any).order_items || order.items || order.itemsDetails || [];
+                
+                // If order already has items, use them
+                if (Array.isArray(existingItems) && existingItems.length > 0) {
+                    console.log(`✅ Order ${order.id} already has ${existingItems.length} items`);
+                    return {
+                        ...order,
+                        items: existingItems,
+                        itemsDetails: existingItems,
+                        order_items: existingItems
+                    };
+                }
+
+                // Fetch items separately
                 try {
                     console.log(`📦 Fetching items for order ${order.id}...`);
                     const { data: itemsData, error } = await supabase
                         .from('order_items')
                         .select('*')
-                        .eq('order_id', order.id);
+                        .eq('order_id', String(order.id));
 
                     if (error) {
                         console.error(`❌ Error fetching items for order ${order.id}:`, error);
-                        // Return order with existing items if any
+                        console.error('Error details:', JSON.stringify(error, null, 2));
                         return {
                             ...order,
-                            items: (order as any).order_items || order.items || order.itemsDetails || [],
-                            itemsDetails: (order as any).order_items || order.items || order.itemsDetails || [],
-                            order_items: (order as any).order_items || order.items || order.itemsDetails || []
+                            items: [],
+                            itemsDetails: [],
+                            order_items: []
                         };
                     }
 
-                    console.log(`✅ Fetched ${itemsData?.length || 0} items for order ${order.id}:`, itemsData);
+                    const items = itemsData || [];
+                    console.log(`✅ Fetched ${items.length} items for order ${order.id}:`, items);
                     
                     return {
                         ...order,
-                        items: itemsData || [],
-                        itemsDetails: itemsData || [],
-                        order_items: itemsData || []
+                        items: items,
+                        itemsDetails: items,
+                        order_items: items
                     };
                 } catch (error) {
                     console.error(`❌ Exception fetching items for order ${order.id}:`, error);
-                    return order;
+                    return {
+                        ...order,
+                        items: [],
+                        itemsDetails: [],
+                        order_items: []
+                    };
                 }
             }));
 
-            console.log('✅ All orders updated with items:', updatedOrders.map(o => ({
+            const totalItems = updatedOrders.reduce((sum, o) => sum + ((o as any).order_items || []).length, 0);
+            console.log(`✅ All orders updated. Total items across all orders: ${totalItems}`);
+            console.log('Orders summary:', updatedOrders.map(o => ({
                 id: o.id,
-                itemsCount: ((o as any).order_items || o.items || o.itemsDetails || []).length
+                orderNumber: o.order_number,
+                itemsCount: ((o as any).order_items || []).length,
+                items: ((o as any).order_items || []).map((i: any) => i.product_name)
             })));
             
             setOrdersWithItems(updatedOrders);
         };
 
-        if (orders.length > 0) {
-            fetchOrderItems();
-        } else {
-            setOrdersWithItems(orders);
-        }
+        fetchOrderItems();
     }, [orders]);
     // Basic Calculations - Use total_amount from database
     const totalRevenue = orders.reduce((acc, curr) => acc + (Number(curr.total_amount) || Number(curr.total) || 0), 0);
@@ -400,44 +425,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ orders, chefs, m
                                 // Get customer name
                                 const customerName = order.customer_name || order.customer || 'غير محدد';
                                 
-                                // Get order items as string
+                                // Get order items as string - USE ordersWithItems state which has fetched items
                                 let itemsText = '';
                                 
-                                // Try multiple ways to get order items
-                                let orderItems: any[] = [];
+                                // Get items from ordersWithItems (which has been fetched separately)
+                                const orderItems = (order as any).order_items || order.items || order.itemsDetails || [];
                                 
-                                // Method 1: Check order_items from joined query (most reliable)
-                                if ((order as any).order_items && Array.isArray((order as any).order_items) && (order as any).order_items.length > 0) {
-                                    orderItems = (order as any).order_items;
-                                }
-                                // Method 2: Check items array (from getOrders mapping)
-                                else if (order.items && Array.isArray(order.items) && order.items.length > 0) {
-                                    orderItems = order.items;
-                                }
-                                // Method 3: Check itemsDetails array (legacy)
-                                else if (order.itemsDetails && Array.isArray(order.itemsDetails) && order.itemsDetails.length > 0) {
-                                    orderItems = order.itemsDetails;
-                                }
-                                
-                                // Debug logging (only first order to avoid spam)
-                                if (ordersWithItems.indexOf(order) === 0) {
-                                    console.log(`📋 Order ${order.id} items check:`, {
-                                        orderId: order.id,
-                                        orderNumber: orderNumber,
-                                        hasOrderItems: !!(order as any).order_items,
-                                        orderItemsArray: (order as any).order_items,
-                                        orderItemsLength: (order as any).order_items?.length || 0,
-                                        hasItems: !!order.items,
-                                        itemsArray: order.items,
-                                        itemsLength: Array.isArray(order.items) ? order.items.length : 'not array',
-                                        hasItemsDetails: !!order.itemsDetails,
-                                        itemsDetailsArray: order.itemsDetails,
-                                        finalOrderItems: orderItems,
-                                        finalOrderItemsLength: orderItems.length
-                                    });
-                                }
-                                
-                                if (orderItems.length > 0) {
+                                if (Array.isArray(orderItems) && orderItems.length > 0) {
                                     itemsText = orderItems.map((item: any) => {
                                         const itemName = item.product_name || item.name || item.productName || 'منتج';
                                         const quantity = item.quantity || 1;

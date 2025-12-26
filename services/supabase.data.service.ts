@@ -592,17 +592,67 @@ export class SupabaseDataService {
   async createOrderItems(items: Partial<OrderItem>[]): Promise<boolean> {
     try {
       logger.info('SUPABASE', '➕ Creating order items...', { count: items.length });
+      logger.debug('SUPABASE', '📦 Order items data:', JSON.stringify(items, null, 2));
 
-      const { error } = await supabase
+      if (!items || items.length === 0) {
+        logger.warn('SUPABASE', '⚠️ No items to create');
+        return false;
+      }
+
+      // Remove image_url if column doesn't exist (will be handled by retry)
+      // First, try to insert with all fields
+      let { data, error } = await supabase
         .from('order_items')
-        .insert(items);
+        .insert(items)
+        .select();
 
-      if (error) throw error;
+      // If error is about missing image_url column, retry without it
+      if (error && (error.message?.includes('image_url') || error.code === 'PGRST204')) {
+        logger.warn('SUPABASE', '⚠️ image_url column not found, retrying without it...');
+        
+        // Remove image_url from all items
+        const itemsWithoutImage = items.map((item: any) => {
+          const { image_url, ...rest } = item;
+          return rest;
+        });
+        
+        logger.debug('SUPABASE', '📦 Retrying with items (without image_url):', JSON.stringify(itemsWithoutImage, null, 2));
+        
+        const { data: retryData, error: retryError } = await supabase
+          .from('order_items')
+          .insert(itemsWithoutImage)
+          .select();
 
-      logger.info('SUPABASE', '✅ Order items created successfully');
+        if (retryError) {
+          logger.error('SUPABASE', '❌ Failed to create order items (retry without image_url)', retryError);
+          logger.error('SUPABASE', '❌ Retry error details:', JSON.stringify(retryError, null, 2));
+          throw retryError;
+        }
+
+        logger.info('SUPABASE', '✅ Order items created successfully (without image_url)', { 
+          count: retryData?.length || 0,
+          createdIds: retryData?.map((item: any) => item.id)
+        });
+        return true;
+      }
+
+      if (error) {
+        logger.error('SUPABASE', '❌ Failed to create order items', error);
+        logger.error('SUPABASE', '❌ Error details:', JSON.stringify(error, null, 2));
+        throw error;
+      }
+
+      logger.info('SUPABASE', '✅ Order items created successfully', { 
+        count: data?.length || 0,
+        createdIds: data?.map((item: any) => item.id)
+      });
       return true;
-    } catch (error) {
+    } catch (error: any) {
       logger.error('SUPABASE', '❌ Failed to create order items', error);
+      logger.error('SUPABASE', '❌ Error message:', error?.message);
+      logger.error('SUPABASE', '❌ Error code:', error?.code);
+      logger.error('SUPABASE', '❌ Error details:', error?.details);
+      logger.error('SUPABASE', '❌ Error hint:', error?.hint);
       return false;
     }
   }
