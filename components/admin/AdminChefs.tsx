@@ -294,9 +294,13 @@ export const AdminChefs: React.FC<AdminChefsProps> = ({ chefs, orders, toggleChe
                     
                     return (
                         <div key={chef.id} className={`bg-white rounded-[2rem] border transition-all duration-300 ${chef.is_active ? 'border-green-200 shadow-lg shadow-green-100/50' : 'border-gray-200 opacity-90' } overflow-hidden relative group hover:shadow-xl`}>
-                             {/* Cover Image Area */}
+                             {/* Cover Image Area - Use cover_image_url ONLY, not profile image */}
                              <div className="h-32 w-full relative bg-gray-100">
-                                <img src={chef.cover_image_url || chef.image_url || '/placeholder.jpg'} alt={`${chef.chef_name} cover`} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                                <img 
+                                    src={chef.cover_image_url || '/placeholder.jpg'} 
+                                    alt={`${chef.chef_name} cover`} 
+                                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
+                                />
                                 <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
                                 
                                 {/* Status Pill */}
