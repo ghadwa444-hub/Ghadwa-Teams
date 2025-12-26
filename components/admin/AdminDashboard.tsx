@@ -15,39 +15,33 @@ interface AdminDashboardProps {
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({ orders, chefs, mealsCount, offersCount, visitorsCount }) => {
     const [ordersWithItems, setOrdersWithItems] = useState<Order[]>(orders);
 
-    // Fetch order_items for orders that don't have them
+    // Fetch order_items for ALL orders (force refresh)
     useEffect(() => {
         const fetchOrderItems = async () => {
-            const ordersNeedingItems = orders.filter(order => {
-                const items = (order as any).order_items || order.items || order.itemsDetails || [];
-                return !items || items.length === 0;
-            });
-
-            if (ordersNeedingItems.length === 0) {
-                setOrdersWithItems(orders);
-                return;
-            }
-
+            console.log('🔄 Fetching order items for', orders.length, 'orders...');
+            
             const updatedOrders = await Promise.all(orders.map(async (order) => {
-                const items = (order as any).order_items || order.items || order.itemsDetails || [];
-                
-                // If order already has items, return as is
-                if (items && items.length > 0) {
-                    return order;
-                }
-
-                // Fetch items separately
+                // Always fetch items separately to ensure we have the latest data
                 try {
+                    console.log(`📦 Fetching items for order ${order.id}...`);
                     const { data: itemsData, error } = await supabase
                         .from('order_items')
                         .select('*')
                         .eq('order_id', order.id);
 
                     if (error) {
-                        console.error(`Error fetching items for order ${order.id}:`, error);
-                        return order;
+                        console.error(`❌ Error fetching items for order ${order.id}:`, error);
+                        // Return order with existing items if any
+                        return {
+                            ...order,
+                            items: (order as any).order_items || order.items || order.itemsDetails || [],
+                            itemsDetails: (order as any).order_items || order.items || order.itemsDetails || [],
+                            order_items: (order as any).order_items || order.items || order.itemsDetails || []
+                        };
                     }
 
+                    console.log(`✅ Fetched ${itemsData?.length || 0} items for order ${order.id}:`, itemsData);
+                    
                     return {
                         ...order,
                         items: itemsData || [],
@@ -55,15 +49,24 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ orders, chefs, m
                         order_items: itemsData || []
                     };
                 } catch (error) {
-                    console.error(`Error fetching items for order ${order.id}:`, error);
+                    console.error(`❌ Exception fetching items for order ${order.id}:`, error);
                     return order;
                 }
             }));
 
+            console.log('✅ All orders updated with items:', updatedOrders.map(o => ({
+                id: o.id,
+                itemsCount: ((o as any).order_items || o.items || o.itemsDetails || []).length
+            })));
+            
             setOrdersWithItems(updatedOrders);
         };
 
-        fetchOrderItems();
+        if (orders.length > 0) {
+            fetchOrderItems();
+        } else {
+            setOrdersWithItems(orders);
+        }
     }, [orders]);
     // Basic Calculations - Use total_amount from database
     const totalRevenue = orders.reduce((acc, curr) => acc + (Number(curr.total_amount) || Number(curr.total) || 0), 0);
@@ -416,21 +419,23 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ orders, chefs, m
                                     orderItems = order.itemsDetails;
                                 }
                                 
-                                // Debug logging for ALL orders to see what's happening
-                                console.log(`Order ${order.id} items:`, {
-                                    orderId: order.id,
-                                    orderNumber: orderNumber,
-                                    hasOrderItems: !!(order as any).order_items,
-                                    orderItemsArray: (order as any).order_items,
-                                    orderItemsLength: (order as any).order_items?.length || 0,
-                                    hasItems: !!order.items,
-                                    itemsArray: order.items,
-                                    itemsLength: Array.isArray(order.items) ? order.items.length : 'not array',
-                                    hasItemsDetails: !!order.itemsDetails,
-                                    itemsDetailsArray: order.itemsDetails,
-                                    finalOrderItems: orderItems,
-                                    finalOrderItemsLength: orderItems.length
-                                });
+                                // Debug logging (only first order to avoid spam)
+                                if (ordersWithItems.indexOf(order) === 0) {
+                                    console.log(`📋 Order ${order.id} items check:`, {
+                                        orderId: order.id,
+                                        orderNumber: orderNumber,
+                                        hasOrderItems: !!(order as any).order_items,
+                                        orderItemsArray: (order as any).order_items,
+                                        orderItemsLength: (order as any).order_items?.length || 0,
+                                        hasItems: !!order.items,
+                                        itemsArray: order.items,
+                                        itemsLength: Array.isArray(order.items) ? order.items.length : 'not array',
+                                        hasItemsDetails: !!order.itemsDetails,
+                                        itemsDetailsArray: order.itemsDetails,
+                                        finalOrderItems: orderItems,
+                                        finalOrderItemsLength: orderItems.length
+                                    });
+                                }
                                 
                                 if (orderItems.length > 0) {
                                     itemsText = orderItems.map((item: any) => {
